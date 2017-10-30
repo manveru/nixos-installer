@@ -3,10 +3,16 @@
 
 (load "lib/jq.scm")
 (load "lib/disks.scm")
+(load "lib/tz.scm")
 
 (let ((testname "jq-test"))
   (test-begin testname)
   (test-equal "0" (jq "[]" "length"))
+  (test-end testname))
+
+(let ((testname "tz-test"))
+  (test-begin testname)
+  (test-equal "0" (timezones))
   (test-end testname))
 
 ;; (let ((testname "disk-detection-test"))
