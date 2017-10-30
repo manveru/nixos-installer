@@ -9,7 +9,7 @@
 
   installPhase = ''
     mkdir -p $out
-    cp ${./hello.html} $out/hello.html
+    cp ${./template.scm} $out/template.scm
     cp ${./server.scm} $out/server.scm
     ls -R $out
   '';

@@ -1,5 +1,17 @@
 (use-modules (web server) (ice-9 textual-ports))
+(use-modules (web response))
+
+(load "template.scm")
+
+(define* (send-xml msg #:key (code 200))
+  (define doctype "<!DOCTYPE html>\n")
+  (values (build-response #:code code
+                          #:headers `((content-type . (text/html))))
+          (lambda (port)
+            (begin (display doctype port)
+                   (sxml->xml msg port)))))
+
 (define (hello-world-handler request request-body)
-  (values '((content-type . (text/html)))
-          (get-string-all (open-input-file "hello.html"))))
+  (send-xml (index-page '())))
+
 (run-server hello-world-handler 'http '(#:port 8081))
