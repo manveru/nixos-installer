@@ -1,7 +1,7 @@
 (use-modules (web server))
 (use-modules (web response))
 
-(load "template.scm")
+(load "lib/template.scm")
 
 (define* (send-xml msg #:key (code 200))
   (define doctype "<!DOCTYPE html>\n")

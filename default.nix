@@ -9,7 +9,7 @@
 
   installPhase = ''
     mkdir -p $out #test
-    cp *.scm tests/ $out -R
+    cp *.scm tests/ lib/ $out -R
   '';
 
   installCheckPhase = ''
@@ -19,7 +19,7 @@
     STATUS=$?
     set -e
     if [ $STATUS -ne 0 ]; then
-        cat jq-test.log
+        cat *-test.log
     fi
     echo "Test exit code: $STATUS"
     return $STATUS
