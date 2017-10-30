@@ -1,7 +1,7 @@
-{stdenv, lib, guile, jq}: stdenv.mkDerivation {
+{stdenv, lib, guile, jq, tzdata }: stdenv.mkDerivation {
   name = "nixos-installer";
 
-  buildInputs = [ guile jq ];
+  buildInputs = [ guile jq tzdata ];
 
   src = lib.cleanSource ./.;
 
@@ -15,6 +15,8 @@
   installCheckPhase = ''
     cd $out
     set +e
+    TZDIR"
+    exit 1
     guile --no-auto-compile -s tests.scm
     STATUS=$?
     set -e

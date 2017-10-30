@@ -19,16 +19,16 @@
     (car (timezones)))
   (test-end testname))
 
-;; (let ((testname "disk-detection-test"))
-;;   (test-begin testname)
-;;   (let* ((sample-output (get-string-all
-;;                          (open-input-file
-;;                           "tests/lsblk-sample-output.json")))
-;;          (detected-disks (detect-disks-from-json
-;;                           sample-output)))
-;;     (begin
-;;       (test-assert (= 1 (length detected-disks)))
-;;       (test-end testname))))
+(let ((testname "disk-detection-test"))
+  (test-begin testname)
+  (let* ((sample-output (get-string-all
+                         (open-input-file
+                          "tests/lsblk-sample-output.json")))
+         (detected-disks (detect-disks-from-json
+                          sample-output)))
+    (begin
+      (test-equal 1 (length detected-disks))
+      (test-end testname))))
 
 (let ((runner (test-runner-get)))
   (exit (if (< 0 (test-runner-fail-count runner))
