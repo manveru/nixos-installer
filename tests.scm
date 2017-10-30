@@ -33,5 +33,4 @@
 (let ((runner (test-runner-get)))
   (exit (if (< 0 (test-runner-fail-count runner))
             1
-            0))
-  )
+            0)))

@@ -1,15 +1,26 @@
-(use-modules (sxml simple))
-(use-modules (srfi srfi-1))
+(use-modules (sxml simple)
+             (srfi srfi-1))
 
-(define username-form
+(load "tz.scm")
+
+(define input-username
   `(div (p "username:")
-        (form (input (@ (type "text"))))))
+        (input (@ (type "text")))))
+
+(define input-timezone
+  `(select (@ (name "timezone"))
+           ,@(map (lambda (name)
+                    `(option (@ (value ,name)) ,name))
+                  (timezone-names))))
+
+(define form
+  `(form ,input-username ,input-timezone))
 
 (define (index-page devices)
   (define html-head
     `(head (title "NixOS installer")))
   (define html-body
     `(body (h1 "NixOS installer")
-           ,username-form))
+           ,form))
     `(html ,html-head ,html-body)
   )

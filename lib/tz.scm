@@ -20,3 +20,6 @@
              '("country" "coords" "name" "comment")
              (string-split line #\tab)))
          lines)))
+
+(define (timezone-names)
+  (map (lambda (zone) (cdar (cddr zone))) (timezones)))
