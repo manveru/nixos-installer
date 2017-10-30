@@ -1,0 +1,5 @@
+(use-modules (web server) (ice-9 textual-ports))
+(define (hello-world-handler request request-body)
+  (values '((content-type . (text/html)))
+          (get-string-all (open-input-file "hello.html"))))
+(run-server hello-world-handler 'http '(#:port 8081))

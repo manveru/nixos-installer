@@ -1,0 +1,3 @@
+#!/usr/bin/env sh
+
+ls -R | entr -r guile server.scm
