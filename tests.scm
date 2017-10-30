@@ -12,7 +12,11 @@
 
 (let ((testname "tz-test"))
   (test-begin testname)
-  (test-equal "0" (timezones))
+  (test-equal
+    '(("country" "AD")
+      ("coords" "+4230+00131")
+      ("name" "Europe/Andorra"))
+    (car (timezones)))
   (test-end testname))
 
 ;; (let ((testname "disk-detection-test"))

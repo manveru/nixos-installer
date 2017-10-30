@@ -1,7 +1,5 @@
 (use-modules (ice-9 textual-ports)
-             (ice-9 hash-table)
-             (srfi srfi-1)
-             (srfi srfi-13))
+             (srfi srfi-1))
 
 (define (timezones)
   (let* ((zonetab
@@ -15,12 +13,10 @@
                     (and
                       (> (string-length line) 0)
                       (not (string=? "#" (substring line 0 1)))))
-                    all-lines))
-         )
-    (close-port zonetab)
+                    all-lines)))
+    (close-input-port zonetab)
     (map (lambda (line)
-           (display (alist->hash-table (zip
-                      '("country" "coords" "name" "comment")
-                      (string-split line #\tab)))))
-         lines)
-    "hi"))
+           (zip
+             '("country" "coords" "name" "comment")
+             (string-split line #\tab)))
+         lines)))

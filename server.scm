@@ -1,5 +1,6 @@
-(use-modules (web server))
-(use-modules (web response))
+(use-modules (web server)
+             (web response)
+             (sxml simple))
 
 (load "lib/template.scm")
 
