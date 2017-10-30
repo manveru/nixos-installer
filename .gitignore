@@ -1,6 +1,9 @@
 # misc
 *~
 
+# guile
+*.log
+
 # nix
 result
 

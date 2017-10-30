@@ -1,16 +1,27 @@
-{guile, stdenv}: stdenv.mkDerivation {
+{stdenv, lib, guile, jq}: stdenv.mkDerivation {
   name = "nixos-installer";
 
-  buildInputs = [ guile ];
+  buildInputs = [ guile jq ];
 
-  src = null;
+  src = lib.cleanSource ./.;
 
-  unpackPhase = "true";
+  doInstallCheck = true;
 
   installPhase = ''
-    mkdir -p $out
-    cp ${./template.scm} $out/template.scm
-    cp ${./server.scm} $out/server.scm
-    ls -R $out
+    mkdir -p $out #test
+    cp *.scm tests/ $out -R
+  '';
+
+  installCheckPhase = ''
+    cd $out
+    set +e
+    guile --no-auto-compile -s tests.scm
+    STATUS=$?
+    set -e
+    if [ $STATUS -ne 0 ]; then
+        cat jq-test.log
+    fi
+    echo "Test exit code: $STATUS"
+    return $STATUS
   '';
 }

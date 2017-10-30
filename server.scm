@@ -1,4 +1,4 @@
-(use-modules (web server) (ice-9 textual-ports))
+(use-modules (web server))
 (use-modules (web response))
 
 (load "template.scm")
