@@ -1,4 +1,4 @@
-{ stdenv, fetchgit, autoconf, automake, guile }:
+{ stdenv, fetchgit, autoreconfHook, guile }:
 let
   version = "0.6";
 in
@@ -10,12 +10,8 @@ stdenv.mkDerivation {
     sha256 = "0asm30l85qmryvnpq9ipncyy9nlmrdc84wbbijjma6d4z1jckfdb";
   };
 
-  nativeBuildInputs = [ autoconf automake ];
+  nativeBuildInputs = [ autoreconfHook ];
 
   buildInputs = [ guile ];
 
-  configurePhase = ''
-    autoreconf -vif
-    ./configure --prefix=$out
-  '';
 }

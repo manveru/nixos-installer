@@ -1,13 +1,22 @@
-{stdenv, lib, guile, jq, tzdata, makeWrapper, utillinux, guile-json, callPackage, elmPackages}:
+{stdenv, lib, guile, jq, tzdata, makeWrapper, utillinux
+, guile-json
+, guile-fibers
+, guile-websocket
+, callPackage
+, elmPackages}:
 let
   nixos-installer-frontend = callPackage ./ui {
     elm-make = elmPackages.elm-make;
   };
+  makeGuilePaths = drvs: with builtins;
+    lib.concatStringsSep " " (map toString drvs);
 in
 stdenv.mkDerivation {
   name = "nixos-installer";
 
-  buildInputs = [ guile jq tzdata makeWrapper utillinux guile-json ];
+  buildInputs = [
+    guile jq tzdata makeWrapper utillinux guile-json guile-fibers
+  ];
 
   src = lib.cleanSource ./.;
 
@@ -19,7 +28,8 @@ stdenv.mkDerivation {
     wrapProgram $out/bin/* \
         --set TZDIR ${tzdata}/share/zoneinfo \
         --suffix-each PATH : "${jq}/bin ${guile}/bin ${utillinux}/bin" \
-        --suffix GUILE_LOAD_PATH : ${guile-json}/share/guile/site
+        --suffix-each GUILE_LOAD_PATH : \
+            "${makeGuilePaths [ guile-json guile-fibers guile-websocket ]}"
     cp -R ${nixos-installer-frontend}/* $out
   '';
 

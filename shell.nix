@@ -1,7 +1,4 @@
-with import <nixpkgs> {};
-let
-  guile-json = callPackage ./guile-json.nix {};
-in
+with import <nixpkgs> {overlays = [ (import ./overlay.nix) ]; };
 stdenv.mkDerivation {
   name = "nixos-installer";
 
@@ -10,7 +7,9 @@ stdenv.mkDerivation {
     entr
     utillinux
     jq
-    guile-json 
+    guile-json
+    guile-websocket
+    guile-fibers
     elmPackages.elm
     elmPackages.elm-compiler
     elmPackages.elm-make
@@ -21,5 +20,4 @@ stdenv.mkDerivation {
 
   TZDIR = "${tzdata}/share/zoneinfo";
 
-  GUILE_LOAD_PATH="${guile-json}";
 }

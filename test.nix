@@ -1,9 +1,12 @@
 { system ? builtins.currentSystem }:
 with import <nixpkgs/nixos/lib/testing.nix> { inherit system; };
+let
+  pkgs = import <nixpkgs> { overlays = [ (import ./overlay.nix) ]; };
+in
 with pkgs.lib;
 let
   guile-json = pkgs.callPackage ./guile-json.nix {};
-  installer = pkgs.callPackage ./. {inherit guile-json; };
+  installer = pkgs.callPackage ./. {};
 in
 makeTest {
   name = "nixos-installer-test";
