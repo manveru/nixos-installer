@@ -1,8 +1,8 @@
-{stdenv, lib, guile, jq, tzdata, makeWrapper, utillinux }:
+{stdenv, lib, guile, jq, tzdata, makeWrapper, utillinux, guile-json }:
 stdenv.mkDerivation {
   name = "nixos-installer";
 
-  buildInputs = [ guile jq tzdata makeWrapper utillinux];
+  buildInputs = [ guile jq tzdata makeWrapper utillinux guile-json ];
 
   src = lib.cleanSource ./.;
 
@@ -14,6 +14,7 @@ stdenv.mkDerivation {
     wrapProgram $out/bin/* \
         --set TZDIR ${tzdata}/share/zoneinfo \
         --suffix-each PATH : "${jq}/bin ${guile}/bin ${utillinux}/bin"
+        --suffix GUILE_LOAD_PATH : ${guile-json}/share/guile/site
   '';
 
   installCheckPhase = ''

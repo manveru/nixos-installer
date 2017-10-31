@@ -1,2 +1,5 @@
 with import <nixpkgs> {};
-callPackage ./. {}
+let
+  guile-json = callPackage ./guile-json.nix {};
+in
+callPackage ./. { inherit guile-json; }
