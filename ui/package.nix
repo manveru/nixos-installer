@@ -7,6 +7,10 @@
     version = "2.0.0";
     sha256 = "05sqjd5n8jnq4lv5v0ipcg98b8im1isnnl4wns1zzn4w5nbrjjzi";
   };
+  "elm-lang/http" = {
+    version = "1.0.0";
+    sha256 = "1fh9k278q4i2y447wkk8jd4n12px1nsmycd0fql8k0i3ypcibm8h";
+  };
   "elm-lang/core" = {
     version = "5.1.1";
     sha256 = "1ndw8ffn2la48gvs7xf3zrc5d7zqrq4j6scbrb60mb2ml1a5hhry";
