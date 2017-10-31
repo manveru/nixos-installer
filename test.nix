@@ -19,7 +19,7 @@ makeTest {
 
       systemd.services."installer-service" = {
         wantedBy = [ "multi-user.target" ];
-        script = "${pkgs.guile}/bin/guile ${installer}/server.scm";
+        script = "${installer}/bin/start-installer";
         serviceConfig.WorkingDirectory = installer;
       };
 

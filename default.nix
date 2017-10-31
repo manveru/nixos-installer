@@ -1,22 +1,25 @@
-{stdenv, lib, guile, jq, tzdata }: stdenv.mkDerivation {
+{stdenv, lib, guile, jq, tzdata, makeWrapper, utillinux }:
+stdenv.mkDerivation {
   name = "nixos-installer";
 
-  buildInputs = [ guile jq tzdata ];
+  buildInputs = [ guile jq tzdata makeWrapper utillinux];
 
   src = lib.cleanSource ./.;
 
   doInstallCheck = true;
 
   installPhase = ''
-    mkdir -p $out #test
-    cp *.scm tests/ lib/ $out -R
+    mkdir -p $out
+    cp *.scm tests/ lib/ bin/ $out -R
+    wrapProgram $out/bin/* \
+        --set TZDIR ${tzdata}/share/zoneinfo \
+        --suffix-each PATH : "${jq}/bin ${guile}/bin ${utillinux}/bin"
   '';
 
   installCheckPhase = ''
     cd $out
     set +e
-    TZDIR"
-    exit 1
+    export TZDIR=${tzdata}/share/zoneinfo
     guile --no-auto-compile -s tests.scm
     STATUS=$?
     set -e
