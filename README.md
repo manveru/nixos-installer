@@ -1,2 +1,2 @@
 # nixos-installer
-Using Calamares to install NixOS
+A webserver that can install NixOS for you.
