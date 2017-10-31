@@ -2,7 +2,8 @@
 with import <nixpkgs/nixos/lib/testing.nix> { inherit system; };
 with pkgs.lib;
 let
-  installer = pkgs.callPackage ./. {};
+  guile-json = pkgs.callPackage ./guile-json.nix {};
+  installer = pkgs.callPackage ./. {inherit guile-json; };
 in
 makeTest {
   name = "nixos-installer-test";

@@ -13,7 +13,7 @@ stdenv.mkDerivation {
     cp *.scm tests/ lib/ bin/ $out -R
     wrapProgram $out/bin/* \
         --set TZDIR ${tzdata}/share/zoneinfo \
-        --suffix-each PATH : "${jq}/bin ${guile}/bin ${utillinux}/bin"
+        --suffix-each PATH : "${jq}/bin ${guile}/bin ${utillinux}/bin" \
         --suffix GUILE_LOAD_PATH : ${guile-json}/share/guile/site
   '';
 
