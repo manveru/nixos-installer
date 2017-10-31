@@ -6,6 +6,7 @@
              )
 
 (load "jq.scm")
+(load "io.scm")
 
 (define-class <disk> ()
   (device-path #:accessor device-path
@@ -37,3 +38,7 @@
 (define (detect-disks-from-json json-string)
   (let ((filtered-devices (filter-out-devices-without-vendor json-string)))
     (make-devices-from-json filtered-devices)))
+
+(define (detect-disks)
+  (let ((lsblk-output (read-process-string "lsblk" "-O" "--json")))
+    (detect-disks-from-json lsblk-output)))

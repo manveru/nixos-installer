@@ -10,17 +10,28 @@
 (define input-timezone
   `(select (@ (name "timezone"))
            ,@(map (lambda (name)
-                    `(option (@ (value ,name)) ,name))
+                    `(option (@ (value ,name))
+                             ,name))
                   (timezone-names))))
 
-(define form
-  `(form ,input-username ,input-timezone))
+(define (input-devices devices)
+  `(select (@ (name "disks"))
+     ,@(map (lambda (dev)
+              `(option (@ (value ,(device-path dev)))
+                       ,(device-path dev)))
+            devices)))
+
+(define (form devices)
+  `(form ,input-username
+         ,input-timezone
+         ,(input-devices devices)))
 
 (define (index-page devices)
   (define html-head
     `(head (title "NixOS installer")))
   (define html-body
     `(body (h1 "NixOS installer")
-           ,form))
-    `(html ,html-head ,html-body)
+           ,(form devices)))
+  `(html ,html-head
+         ,html-body)
   )

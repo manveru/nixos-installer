@@ -86,3 +86,12 @@
           ;; return input and output ports
           (cons (car c2p) (cdr p2c))
           )))))
+
+(define (read-process-string prog . args)
+  (let* ((ports (apply open-io-pipe (cons prog args)))
+         (input-port (cdr ports))
+         (output-port (car ports)))
+    (close-port input-port)
+    (let ((output-string (get-string-all output-port)))
+      (close-port output-port)
+      output-string)))
