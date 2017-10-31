@@ -1,4 +1,9 @@
-{stdenv, lib, guile, jq, tzdata, makeWrapper, utillinux, guile-json }:
+{stdenv, lib, guile, jq, tzdata, makeWrapper, utillinux, guile-json, callPackage, elmPackages}:
+let
+  nixos-installer-frontend = callPackage ./ui {
+    elm-make = elmPackages.elm-make;
+  };
+in
 stdenv.mkDerivation {
   name = "nixos-installer";
 
@@ -15,6 +20,7 @@ stdenv.mkDerivation {
         --set TZDIR ${tzdata}/share/zoneinfo \
         --suffix-each PATH : "${jq}/bin ${guile}/bin ${utillinux}/bin" \
         --suffix GUILE_LOAD_PATH : ${guile-json}/share/guile/site
+    cp -R ${nixos-installer-frontend}/* $out
   '';
 
   installCheckPhase = ''
