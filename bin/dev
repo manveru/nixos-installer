@@ -1,0 +1,10 @@
+#!/usr/bin/env sh
+
+SOURCE=$(readlink -f "${BASH_SOURCE[0]}")
+
+cd $(dirname "${SOURCE}")
+cd ..
+
+(cd ui; elm-make index.elm --warn)
+exec guile server.scm
+
