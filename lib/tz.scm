@@ -23,3 +23,8 @@
 
 (define (timezone-names)
   (map (lambda (zone) (cdar (cddr zone))) (timezones)))
+
+(define (timezones->json zones)
+  (define (generate-assoc-list zone)
+    (map (lambda (xs) (cons (car xs) (cadr xs))) zone))
+  (map generate-assoc-list zones))

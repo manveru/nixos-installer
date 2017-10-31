@@ -42,3 +42,11 @@
 (define (detect-disks)
   (let ((lsblk-output (read-process-string "lsblk" "-O" "--json")))
     (detect-disks-from-json lsblk-output)))
+
+(define (disks->json disks)
+  (define (disk->json disk)
+    (list (cons "path" (device-path disk))
+          (cons "model" (device-model disk))
+          (cons "serial" (device-serial disk))
+          (cons "size" (device-size disk))))
+  (map disk->json disks))
