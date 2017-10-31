@@ -29,13 +29,19 @@
 
 (define disks (detect-disks))
 
+(define detected-disks (detect-disks))
+(define detected-timezones (timezones))
+
 (define (installer-handler request request-body)
-  (match (request-path-components request)
-    (()
-     (send-xml (index-page disks)))
-    (("timezones")
-     (send-json (timezones->json (timezones))))
-    (("disks")
-     (send-json (disks->json (detect-disks))))))
+  (cond ((eq? (request-method 'GET))
+         (match (request-path-components request)
+           (()
+            (send-xml (index-page disks)))
+           (("timezones")
+            (send-json (timezones->json detected-timezones)))
+           (("disks")
+            (send-json (disks->json detected-disks)))
+           (failed
+            (values (build-response #:code 404) "resource not found"))))))
 
 (run-server installer-handler 'http '(#:port 8081))
