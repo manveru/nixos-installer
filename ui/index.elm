@@ -2,7 +2,9 @@ module Main exposing (..)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
+import Html.Events exposing (..)
 import Json.Decode exposing (..)
+import Json.Encode
 import Http
 import List
 
@@ -27,6 +29,8 @@ init =
 type Msg
     = NewDisks (Result Http.Error (List Disk))
     | NewTimezones (Result Http.Error (List Timezone))
+    | SavedConfig (Result Http.Error String)
+    | SaveConfig
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -39,10 +43,19 @@ update msg model =
             ( model, Cmd.none )
 
         NewTimezones (Ok newTimezones) ->
-            ( { model | timezones = newTimezones }, Cmd.none )
+            ( { model | timezones = (List.sortBy .name newTimezones) }, Cmd.none )
 
         NewTimezones (Err _) ->
             ( model, Cmd.none )
+
+        SavedConfig (Err _) ->
+            ( model, Cmd.none )
+
+        SavedConfig (Ok _) ->
+            ( model, Cmd.none )
+
+        SaveConfig ->
+            ( model, saveConfig model )
 
 
 decodeDisks : Decoder (List Disk)
@@ -60,6 +73,32 @@ decodeDisks =
 getDisks : Cmd Msg
 getDisks =
     (Http.send NewDisks (Http.get "http://localhost:8081/disks" decodeDisks))
+
+
+saveEncoder : Model -> Json.Encode.Value
+saveEncoder model =
+    Json.Encode.object
+        [ ( "disk", Json.Encode.string "foo" )
+        , ( "timezone", Json.Encode.string "bar" )
+        ]
+
+
+saveConfigDecoder : Decoder String
+saveConfigDecoder =
+    Json.Decode.field "id_token" Json.Decode.string
+
+
+postSaveConfig : Model -> Http.Request String
+postSaveConfig model =
+    let
+        body =
+            model |> saveEncoder |> Http.jsonBody
+    in
+        Http.post "http://localhost:8081/save" body saveConfigDecoder
+
+
+saveConfig model =
+    Http.send SavedConfig (postSaveConfig model)
 
 
 decodeTimezones : Decoder (List Timezone)
@@ -160,7 +199,7 @@ timezoneItem timezone =
 view : Model -> Html Msg
 view model =
     div [ backgroundStyle ]
-        [ Html.form [ formStyle ]
+        [ div [ formStyle ]
             [ h1 [] [ text "NixOS Installer" ]
             , div [ formGroupStyle ]
                 [ label [ for "disk" ] [ text "Install to:" ]
@@ -172,6 +211,10 @@ view model =
                 , select [ id "timezone", name "timezone" ]
                     (List.map timezoneItem model.timezones)
                 ]
+            , div [ formGroupStyle, for "hostname" ]
+                [ label [] [ text "Host name:" ]
+                , input [ id "hostname", type_ "text", name "hostname" ] []
+                ]
             , div [ formGroupStyle, for "username" ]
                 [ label [] [ text "Username:" ]
                 , input [ id "username", type_ "text", name "username" ] []
@@ -180,12 +223,11 @@ view model =
                 [ label [] [ text "Password:" ]
                 , input [ id "password", type_ "password", name "password" ] []
                 ]
-            , input
-                [ type_ "submit"
-                , successButtonStyle
-                , Html.Attributes.value "Save configuration.nix"
+            , button
+                [ successButtonStyle
+                , onClick SaveConfig
                 ]
-                []
+                [ text "Save configuration.nix" ]
             , input
                 [ type_ "submit"
                 , dangerButtonStyle
