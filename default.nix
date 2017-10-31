@@ -9,7 +9,7 @@ let
     elm-make = elmPackages.elm-make;
   };
   makeGuilePaths = drvs: with builtins;
-    lib.concatStringsSep " " (map toString drvs);
+    lib.concatStringsSep " " (map (drv: "${drv}/share/guile/site") drvs);
 in
 stdenv.mkDerivation {
   name = "nixos-installer";
