@@ -23,14 +23,15 @@ stdenv.mkDerivation {
   doInstallCheck = true;
 
   installPhase = ''
-    mkdir -p $out
+    mkdir -p $out/ui
     cp *.scm tests/ lib/ bin/ $out -R
     wrapProgram $out/bin/* \
         --set TZDIR ${tzdata}/share/zoneinfo \
         --suffix-each PATH : "${jq}/bin ${guile}/bin ${utillinux}/bin" \
         --suffix-each GUILE_LOAD_PATH : \
             "${makeGuilePaths [ guile-json guile-fibers guile-websocket ]}"
-    cp -R ${nixos-installer-frontend}/* $out
+        --suffix GUILE_LOAD_PATH : ${guile-json}/share/guile/site
+    cp -R ${nixos-installer-frontend}/* $out/ui
   '';
 
   installCheckPhase = ''

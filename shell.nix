@@ -20,4 +20,10 @@ stdenv.mkDerivation {
 
   TZDIR = "${tzdata}/share/zoneinfo";
 
+  GUILE_LOAD_PATH="${guile-json}";
+
+  shellHook = ''
+    rm -rf elm-stuff
+    ${elmStuff}
+  '';
 }

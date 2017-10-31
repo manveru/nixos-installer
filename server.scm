@@ -11,6 +11,8 @@
 (load "lib/disks.scm")
 (load "lib/tz.scm")
 
+(define sym 'access-control-allow-origin)
+
 (define (request-path-components request)
   (split-and-decode-uri-path (uri-path (request-uri request))))
 
@@ -28,9 +30,23 @@
 
 (define* (send-json data #:key (code 200))
   (values (build-response #:code code
-                          #:headers `((content-type . (application/json))))
+                          #:headers `((access-control-allow-origin . "*")
+                                      (content-type . (application/json))))
           (lambda (port)
             (scm->json data port))))
+
+(define* (send-html data #:key (code 200))
+  (values (build-response #:code code
+                          #:headers `((access-control-allow-origin . "*")
+                                      (content-type . (text/html))))
+          (lambda (port)
+            (display data port))))
+
+(define* (send-svg data #:key (code 200))
+  (values (build-response #:code code
+                          #:headers `((content-type . (image/svg+xml))))
+          (lambda (port)
+            (display data port))))
 
 (define disks (detect-disks))
 
@@ -41,7 +57,15 @@
   (cond ((eq? (request-method request) 'GET)
          (match (request-path-components request)
            (()
-            (send-xml (index-page disks)))
+            (send-html (let* ((port (open-input-file "ui/index.html"))
+                              (body (get-string-all port)))
+                         (close-input-port port)
+                         body)))
+           (("logo.svg")
+            (send-svg (let* ((port (open-input-file "ui/logo.svg"))
+                              (body (get-string-all port)))
+                         (close-input-port port)
+                         body)))
            (("timezones")
             (send-json (timezones->json detected-timezones)))
            (("disks")

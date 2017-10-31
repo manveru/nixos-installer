@@ -7,3 +7,6 @@
 # nix
 result
 
+# elm
+elm-stuff/*
+ui/elm-stuff
