@@ -15,7 +15,6 @@ makeTest {
     box = {config, pkgs, ...}: {
       time.timeZone = "Europe/Berlin";
       i18n.defaultLocale = "en_US.UTF-8";
-      networking.firewall.enable = false;
 
       environment.systemPackages = with pkgs; [
         htop iotop tmux strace file gzip
@@ -32,13 +31,8 @@ makeTest {
         nrBuildUsers = 10;
         useSandbox = true;
         readOnlyStore = true;
-        extraOptions = ''
-          build-cores = 0
-          auto-optimise-store = true
-        '';
       };
 
-      virtualisation.writableStore = true;
       virtualisation.diskSize = 2048;
     };
   };
@@ -46,7 +40,7 @@ makeTest {
   testScript = ''
     startAll;
 
-    $box->waitForUnit("installer-service");
+    $box->waitForUnit("installer-service.service");
     $box->waitForOpenPort(8081);
 
     subtest "Shows up", sub {
@@ -54,5 +48,6 @@ makeTest {
     };
 
     $box->stopJob("installer-service");
+    $box->shutdown
   '';
 }

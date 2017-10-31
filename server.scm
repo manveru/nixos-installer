@@ -16,7 +16,7 @@
 (define (request-path-components request)
   (split-and-decode-uri-path (uri-path (request-uri request))))
 
-(define (output-post-data msg)
+(define (output-request-data msg)
   (display (utf8->string msg))
   (newline))
 
@@ -73,8 +73,8 @@
            (failed
             (values (build-response #:code 404) "resource not found"))))
         ((eq? (request-method request) 'POST)
-         (begin
-           (output-post-data request-body)
-           (values (build-response #:code 200) "ok")))))
+         (match (request-path-components request)
+           (("save")
+            (output-request-data request-body))))))
 
 (run-server installer-handler 'http '(#:port 8081))

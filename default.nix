@@ -25,12 +25,15 @@ stdenv.mkDerivation {
   installPhase = ''
     mkdir -p $out/ui
     cp *.scm tests/ lib/ bin/ $out -R
-    wrapProgram $out/bin/* \
-        --set TZDIR ${tzdata}/share/zoneinfo \
-        --suffix-each PATH : "${jq}/bin ${guile}/bin ${utillinux}/bin" \
-        --suffix-each GUILE_LOAD_PATH : \
-            "${makeGuilePaths [ guile-json guile-fibers guile-websocket ]}"
-        --suffix GUILE_LOAD_PATH : ${guile-json}/share/guile/site
+    for i in $(find $out/bin -type f); do
+        echo "Wrapping $i ..."
+        chmod +x "$i"
+        wrapProgram "$i" \
+            --set TZDIR ${tzdata}/share/zoneinfo \
+            --suffix-each PATH : "${jq}/bin ${guile}/bin ${utillinux}/bin" \
+            --suffix-each GUILE_LOAD_PATH : \
+                "${makeGuilePaths [ guile-json guile-fibers guile-websocket ]}"
+    done
     cp -R ${nixos-installer-frontend}/* $out/ui
   '';
 
