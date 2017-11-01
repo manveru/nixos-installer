@@ -165,6 +165,7 @@ saveEncoder model =
         , ( "username", Json.Encode.string model.username )
         , ( "password", Json.Encode.string model.password )
         , ( "hostname", Json.Encode.string model.hostname )
+        , ( "hostname", Json.Encode.string model.hostname )
         ]
 
 
@@ -273,12 +274,18 @@ view model =
             , div [ formGroupStyle ]
                 [ label [ for "disk" ] [ text "Install to:" ]
                 , select [ onInput SetDisk, id "disk", name "disk" ]
-                    (List.map diskItem model.disks)
+                    (List.append
+                        [ option [] [] ]
+                        (List.map diskItem model.disks)
+                    )
                 ]
             , div [ formGroupStyle ]
                 [ label [ for "timezone" ] [ text "Timezone:" ]
                 , select [ onInput SetTimezone, id "timezone", name "timezone" ]
-                    (List.map timezoneItem model.timezones)
+                    (List.append
+                        [ option [] [] ]
+                        (List.map timezoneItem model.timezones)
+                    )
                 ]
             , div [ formGroupStyle, for "hostname" ]
                 [ label [] [ text "Host name:" ]

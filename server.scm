@@ -80,8 +80,11 @@
         ((eq? (request-method request) 'POST)
          (match (request-path-components request)
            (("save")
-            (display (utf8->string request-body))
+            (display (jq (utf8->string request-body) "."))
             (newline)
+            (let ((port (open-output-file "out.json")))
+                   (display (jq (utf8->string request-body) ".") port)
+                   (close-output-port port))
             (send-text "saved"))))))
 
 (run-server installer-handler 'http '(#:port 8081))
