@@ -7,6 +7,7 @@ import Json.Decode exposing (..)
 import Json.Encode
 import Http
 import List
+import Maybe exposing (withDefault)
 
 
 type alias Disk =
@@ -18,12 +19,28 @@ type alias Timezone =
 
 
 type alias Model =
-    { disks : List Disk, timezones : List Timezone }
+    { disk : Maybe Disk
+    , timezone : Maybe Timezone
+    , username : String
+    , hostname : String
+    , password : String
+    , disks : List Disk
+    , timezones : List Timezone
+    }
 
 
 init : ( Model, Cmd Msg )
 init =
-    ( Model [] [], Cmd.batch [ getDisks, getTimezones ] )
+    ( Model
+        Nothing
+        Nothing
+        ""
+        ""
+        ""
+        []
+        []
+    , Cmd.batch [ getDisks, getTimezones ]
+    )
 
 
 type Msg
@@ -31,6 +48,11 @@ type Msg
     | NewTimezones (Result Http.Error (List Timezone))
     | SavedConfig (Result Http.Error String)
     | SaveConfig
+    | SetDisk String
+    | SetTimezone String
+    | SetHostname String
+    | SetUsername String
+    | SetPassword String
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -57,6 +79,36 @@ update msg model =
         SaveConfig ->
             ( model, saveConfig model )
 
+        SetDisk diskPath ->
+            ( { model | disk = findDisk model diskPath }, Cmd.none )
+
+        SetTimezone timezoneName ->
+            ( { model | timezone = findTimezone model timezoneName }, Cmd.none )
+
+        SetUsername new ->
+            ( { model | username = new }, Cmd.none )
+
+        SetHostname new ->
+            ( { model | hostname = new }, Cmd.none )
+
+        SetPassword new ->
+            ( { model | password = new }, Cmd.none )
+
+
+findDisk model diskPath =
+    List.head (List.filter (\disk -> disk.path == diskPath) model.disks)
+
+
+findTimezone model timezoneName =
+    List.head
+        (List.filter
+            (\timezone ->
+                timezone.name
+                    == timezoneName
+            )
+            model.timezones
+        )
+
 
 decodeDisks : Decoder (List Disk)
 decodeDisks =
@@ -75,11 +127,44 @@ getDisks =
     (Http.send NewDisks (Http.get "http://localhost:8081/disks" decodeDisks))
 
 
+decodeTimezones : Decoder (List Timezone)
+decodeTimezones =
+    Json.Decode.list
+        (map3
+            Timezone
+            (at [ "country" ] string)
+            (at [ "coords" ] string)
+            (at [ "name" ] string)
+        )
+
+
+getTimezones : Cmd Msg
+getTimezones =
+    (Http.send NewTimezones (Http.get "http://localhost:8081/timezones" decodeTimezones))
+
+
 saveEncoder : Model -> Json.Encode.Value
 saveEncoder model =
     Json.Encode.object
-        [ ( "disk", Json.Encode.string "foo" )
-        , ( "timezone", Json.Encode.string "bar" )
+        [ ( "disk"
+          , case model.disk of
+                Just disk ->
+                    Json.Encode.string disk.path
+
+                Nothing ->
+                    Json.Encode.null
+          )
+        , ( "timezone"
+          , case model.timezone of
+                Just timezone ->
+                    Json.Encode.string timezone.name
+
+                Nothing ->
+                    Json.Encode.null
+          )
+        , ( "username", Json.Encode.string model.username )
+        , ( "password", Json.Encode.string model.password )
+        , ( "hostname", Json.Encode.string model.hostname )
         ]
 
 
@@ -99,22 +184,6 @@ postSaveConfig model =
 
 saveConfig model =
     Http.send SavedConfig (postSaveConfig model)
-
-
-decodeTimezones : Decoder (List Timezone)
-decodeTimezones =
-    Json.Decode.list
-        (map3
-            Timezone
-            (at [ "country" ] string)
-            (at [ "coords" ] string)
-            (at [ "name" ] string)
-        )
-
-
-getTimezones : Cmd Msg
-getTimezones =
-    (Http.send NewTimezones (Http.get "http://localhost:8081/timezones" decodeTimezones))
 
 
 backgroundStyle : Html.Attribute msg
@@ -203,31 +272,31 @@ view model =
             [ h1 [] [ text "NixOS Installer" ]
             , div [ formGroupStyle ]
                 [ label [ for "disk" ] [ text "Install to:" ]
-                , select [ id "disk", name "disk" ]
+                , select [ onInput SetDisk, id "disk", name "disk" ]
                     (List.map diskItem model.disks)
                 ]
             , div [ formGroupStyle ]
                 [ label [ for "timezone" ] [ text "Timezone:" ]
-                , select [ id "timezone", name "timezone" ]
+                , select [ onInput SetTimezone, id "timezone", name "timezone" ]
                     (List.map timezoneItem model.timezones)
                 ]
             , div [ formGroupStyle, for "hostname" ]
                 [ label [] [ text "Host name:" ]
-                , input [ id "hostname", type_ "text", name "hostname" ] []
+                , input [ onInput SetHostname, id "hostname", type_ "text", name "hostname" ] []
                 ]
             , div [ formGroupStyle, for "username" ]
                 [ label [] [ text "Username:" ]
-                , input [ id "username", type_ "text", name "username" ] []
+                , input [ onInput SetUsername, id "username", type_ "text", name "username" ] []
                 ]
             , div [ formGroupStyle, for "password" ]
                 [ label [] [ text "Password:" ]
-                , input [ id "password", type_ "password", name "password" ] []
+                , input [ onInput SetPassword, id "password", type_ "password", name "password" ] []
                 ]
             , button
                 [ successButtonStyle
                 , onClick SaveConfig
                 ]
-                [ text "Save configuration.nix" ]
+                [ text "Save configuration" ]
             , input
                 [ type_ "submit"
                 , dangerButtonStyle
