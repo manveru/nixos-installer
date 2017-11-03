@@ -82,7 +82,7 @@
            (("save")
             (display (jq (utf8->string request-body) "."))
             (newline)
-            (let ((port (open-output-file "out.json")))
+            (let ((port (open-output-file "template/out.json")))
                    (display (jq (utf8->string request-body) ".") port)
                    (close-output-port port))
             (send-text "saved"))))))

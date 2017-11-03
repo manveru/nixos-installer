@@ -1,13 +1,11 @@
 { system ? builtins.currentSystem }:
 with import <nixpkgs/nixos/lib/testing.nix> { inherit system; };
+with import <nixpkgs/nixos/lib/qemu-flags.nix>;
 let
   pkgs = import <nixpkgs> { overlays = [ (import ./overlay.nix) ]; };
-in
-with pkgs.lib;
-let
-  guile-json = pkgs.callPackage ./guile-json.nix {};
   installer = pkgs.callPackage ./. {};
 in
+with pkgs.lib;
 makeTest {
   name = "nixos-installer-test";
 
@@ -45,6 +43,7 @@ makeTest {
 
     subtest "Shows up", sub {
       $box->succeed("curl -f http://localhost:8081");
+      $box->succeed("nixos-install");
     };
 
     $box->stopJob("installer-service");
