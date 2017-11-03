@@ -95,10 +95,12 @@ update msg model =
             ( { model | password = new }, Cmd.none )
 
 
+findDisk : Model -> String -> Maybe Disk
 findDisk model diskPath =
     List.head (List.filter (\disk -> disk.path == diskPath) model.disks)
 
 
+findTimezone : Model -> String -> Maybe Timezone
 findTimezone model timezoneName =
     List.head
         (List.filter
@@ -183,6 +185,7 @@ postSaveConfig model =
         Http.post "http://localhost:8081/save" body saveConfigDecoder
 
 
+saveConfig : Model -> Cmd Msg
 saveConfig model =
     Http.send SavedConfig (postSaveConfig model)
 
