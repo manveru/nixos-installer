@@ -1,14 +1,8 @@
 (use-modules (srfi srfi-64) ;; test framework
              (ice-9 textual-ports))
 
-(load "lib/jq.scm")
 (load "lib/disks.scm")
 (load "lib/tz.scm")
-
-(let ((testname "jq-test"))
-  (test-begin testname)
-  (test-equal "0" (jq "[]" "length"))
-  (test-end testname))
 
 (let ((testname "tz-test"))
   (test-begin testname)

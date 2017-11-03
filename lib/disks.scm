@@ -3,9 +3,9 @@
              (srfi srfi-13) ;; strings
              (srfi srfi-1)
              (ice-9 textual-ports)
+             (json)
              )
 
-(load "jq.scm")
 (load "io.scm")
 
 (define-class <disk> ()
@@ -18,26 +18,22 @@
   (device-serial #:accessor device-serial
                  #:init-keyword #:device-serial))
 
-(define (filter-out-devices-without-vendor json)
-  (jq json "[ .blockdevices[] | select( .vendor != null) ]"))
-
 (define (make-devices-from-json json)
-  (define (make-device-from-json-index index)
-    (let ((machine-json (jq json (string-concatenate (list ".["
-                                                           (number->string index)
-                                                           "]")))))
-      (make <disk>
-        #:device-path (jq machine-json ".name")
-        #:device-model (jq machine-json ".model")
-        #:device-size (jq machine-json ".size")
-        #:device-serial (jq machine-json ".serial"))))
-  (let* ((number-of-devices (string->number (jq json "length")))
-         (indeces (iota number-of-devices)))
-    (map make-device-from-json-index indeces)))
+  (define (make-device-from-json-index json-device)
+    (make <disk>
+      #:device-path (hash-ref json-device "name")
+      #:device-model (hash-ref json-device "model")
+      #:device-size (hash-ref json-device "size")
+      #:device-serial (hash-ref json-device "serial")))
+  (let* ((blockdevices (hash-ref json "blockdevices"))
+         (number-of-devices (length blockdevices)))
+    (map make-device-from-json-index
+         (filter (lambda (device)
+                   (hash-ref device "serial"))
+                 blockdevices))))
 
 (define (detect-disks-from-json json-string)
-  (let ((filtered-devices (filter-out-devices-without-vendor json-string)))
-    (make-devices-from-json filtered-devices)))
+  (make-devices-from-json (json-string->scm json-string)))
 
 (define (detect-disks)
   (let ((lsblk-output (read-process-string "lsblk" "-O" "--json")))
