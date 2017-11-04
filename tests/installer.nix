@@ -4,7 +4,6 @@ with import <nixpkgs/nixos/lib/testing.nix> { inherit system; };
 with import <nixpkgs/nixos/lib/qemu-flags.nix>;
 let
   pkgs = import <nixpkgs> { overlays = [ (import ../overlay.nix) ]; };
-  installer = pkgs.callPackage ../. {};
 in
 with pkgs.lib;
 let
@@ -12,6 +11,8 @@ let
   # The configuration to install.
   makeConfig = {}:
     pkgs.writeText "configuration.nix" (builtins.readFile ../template/qemu.nix);
+
+  channelContents = [ pkgs.rlwrap ];
 
   # The test script boots a NixOS VM, installs NixOS on an empty hard
   # disk, and then reboot from the hard disk.  It's parameterized with
@@ -43,8 +44,6 @@ let
       $machine->succeed("curl -f http://localhost:8081");
 
       subtest "Configures the system", sub {
-        $machine->succeed('cd ${installer}; ls -R >&2');
-
         # TODO: This should be done by the installer
         ${createPartitions}
         $machine->succeed("nixos-generate-config --root /mnt");
@@ -103,9 +102,6 @@ let
       # Check that the daemon works, and that non-root users can run builds (this will build a new profile generation through the daemon)
       $machine->succeed("su alice -l -c 'nix-env -iA nixos.procps' >&2");
 
-      # We need to a writable nix-store on next boot.
-      $machine->copyFileFromHost("${ makeConfig {} }", "/etc/nixos/configuration.nix");
-
       # Check whether nixos-rebuild works.
       $machine->succeed("nixos-rebuild switch >&2");
 
@@ -120,7 +116,6 @@ let
       $machine = createMachine({ ${hdFlags} qemuFlags => "${qemuFlags}", name => "rebuild-switch" });
       ${preBootCommands}
       $machine->waitForUnit("multi-user.target");
-      $machine->copyFileFromHost("${ makeConfig {} }", "/etc/nixos/configuration.nix");
       $machine->succeed("nixos-rebuild boot >&2");
       $machine->shutdown;
 
@@ -131,7 +126,6 @@ let
       $machine->waitForUnit("network.target");
       $machine->shutdown;
     '';
-
 
   makeInstallerTest = name:
     { createPartitions, preBootCommands ? "", extraConfig ? ""
@@ -157,6 +151,7 @@ let
           { imports =
               [ <nixpkgs/nixos/modules/profiles/installation-device.nix>
                 <nixpkgs/nixos/modules/profiles/base.nix>
+                ../template/nixos-installer-service.nix
                 extraInstallerConfig
               ];
 
@@ -168,8 +163,10 @@ let
             # installer. This ensures the target disk (/dev/vda) is
             # the same during and after installation.
             virtualisation.emptyDiskImages = [ 512 ];
-            virtualisation.bootDevice = "/dev/vdb";
-            virtualisation.qemu.diskInterface = "virtio";
+            virtualisation.bootDevice =
+              if grubVersion == 1 then "/dev/sdb" else "/dev/vdb";
+            virtualisation.qemu.diskInterface =
+              if grubVersion == 1 then "scsi" else "virtio";
 
             boot.loader.systemd-boot.enable = mkIf (bootLoader == "systemd-boot") true;
 
@@ -177,34 +174,24 @@ let
 
             # The test cannot access the network, so any packages we
             # need must be included in the VM.
-            system.extraDependencies = with pkgs; [
-              sudo
-              libxml2.bin
-              libxslt.bin
-              docbook5
-              docbook5_xsl
-              unionfs-fuse
-              ntp
-              perlPackages.XMLLibXML
-              perlPackages.ListCompare
+            system.extraDependencies = with pkgs;
+              [ sudo
+                libxml2.bin
+                libxslt.bin
+                docbook5
+                docbook5_xsl
+                unionfs-fuse
+                ntp
+                nixos-artwork.wallpapers.gnome-dark
+                perlPackages.XMLLibXML
+                perlPackages.ListCompare
 
-              # add curl so that rather than seeing the test attempt to download
-              # curl's tarball, we see what it's trying to download
-              curl
-            ];
-
-            systemd.services."nixos-installer" = {
-              wantedBy = [ "multi-user.target" ];
-              environment = {
-                "INSTALLER_SAVE_FILE" = "/mnt/etc/nixos/installer.json";
-                "INSTALLER_CONF_FILE" = "/mnt/etc/nixos/configuration.nix";
-              };
-              serviceConfig =
-                { ExecStart = "${installer}/bin/start-installer";
-                  WorkingDirectory = "/tmp";
-                  Restart = "always";
-                };
-            };
+                # add curl so that rather than seeing the test attempt to download
+                # curl's tarball, we see what it's trying to download
+                curl
+              ]
+              ++ optional (bootLoader == "grub" && grubVersion == 1) pkgs.grub
+              ++ optionals (bootLoader == "grub" && grubVersion == 2) [ pkgs.grub2 pkgs.grub2_efi ];
 
             nix.binaryCaches = mkForce [ ];
           };
@@ -217,25 +204,19 @@ let
       };
     };
 in {
-  simpleUefiSystemdBoot = makeInstallerTest "simpleUefiSystemdBoot"
+  simple = makeInstallerTest "simple"
     { createPartitions =
         ''
           $machine->succeed(
-              "parted --script /dev/vda mklabel gpt",
-              "parted --script /dev/vda -- mkpart ESP fat32 1M 50MiB", # /boot
-              "parted --script /dev/vda -- set 1 boot on",
-              "parted --script /dev/vda -- mkpart primary linux-swap 50MiB 1024MiB",
-              "parted --script /dev/vda -- mkpart primary ext2 1024MiB -1MiB", # /
+              "parted --script /dev/vda mklabel msdos",
+              "parted --script /dev/vda -- mkpart primary linux-swap 1M 1024M",
+              "parted --script /dev/vda -- mkpart primary ext2 1024M -1s",
               "udevadm settle",
-              "mkswap /dev/vda2 -L swap",
+              "mkswap /dev/vda1 -L swap",
               "swapon -L swap",
-              "mkfs.ext3 -L nixos /dev/vda3",
+              "mkfs.ext3 -L nixos /dev/vda2",
               "mount LABEL=nixos /mnt",
-              "mkfs.vfat -n BOOT /dev/vda1",
-              "mkdir -p /mnt/boot",
-              "mount LABEL=BOOT /mnt/boot",
           );
         '';
-        bootLoader = "systemd-boot";
     };
 }

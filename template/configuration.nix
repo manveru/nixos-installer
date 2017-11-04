@@ -7,7 +7,6 @@ json // {
   imports = [
     ./hardware-configuration.nix
     <nixpkgs/nixos/modules/testing/test-instrumentation.nix>
-    ./ssh.nix
   ];
 
   system.extraDependencies = with pkgs; [ stdenvNoCC ];
@@ -18,6 +17,11 @@ json // {
     fsIdentifier = "uuid";
   };
 
+  users.extraUsers.alice = {
+    isNormalUser = true;
+    home = "/home/alice";
+    description = "Alice Foobar";
+  };
+
   hardware.enableAllFirmware = lib.mkForce false;
-  nix.binaryCaches = lib.mkForce [ ];
 }
