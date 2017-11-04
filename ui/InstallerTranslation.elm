@@ -1,43 +1,87 @@
-module InstallerTranslation exposing (..)
-
-import I18Next
+module InstallerTranslation
     exposing
-        ( Translations
-        , initialTranslations
-        , decodeTranslations
+        ( Language
+        , languages
+        , defaultLanguage
+        , defaultTranslation
         )
+
+import I18Next exposing (Translations, initialTranslations, decodeTranslations)
 import Json.Decode exposing (decodeString)
 
 
+defaultLanguage : Language
+defaultLanguage =
+    usEnglishLanguage
+
+
+defaultTranslation : Translations
+defaultTranslation =
+    english
+
+
 type alias Language =
-    { name : String, locale : String, translation : Translations }
+    { name : String
+    , locale : String
+    , translation : Translations
+    , timezone : String
+    }
 
 
 usEnglishLanguage : Language
 usEnglishLanguage =
-    { name = "English (US)", locale = "en_US.UTF-8", translation = english }
+    { name = "English (US)"
+    , locale = "en_US.UTF-8"
+    , translation = english
+    , timezone = "America/Montevideo"
+    }
+
+
+germanLanguage : Language
+germanLanguage =
+    { name = "Deutsch (Deutschland)"
+    , locale = "de_DE.UTF-8"
+    , translation = german
+    , timezone = "Europe/Berlin"
+    }
 
 
 austrianGermanLanguage : Language
 austrianGermanLanguage =
-    { name = "Deutsch (Österreich)", locale = "de_AT.UTF-8", translation = german }
+    { germanLanguage
+        | name = "Deutsch (Österreich)"
+        , locale = "de_AT.UTF-8"
+        , timezone = "Europe/Vienna"
+    }
 
 
 japaneseLanguage : Language
 japaneseLanguage =
-    { name = "日本語", locale = "ja_JP.UTF-8", translation = japanese }
+    { name = "日本語"
+    , locale = "ja_JP.UTF-8"
+    , translation = japanese
+    , timezone = "Asia/Tokyo"
+    }
 
 
 languages : List Language
 languages =
-    [ usEnglishLanguage, austrianGermanLanguage, japaneseLanguage ]
+    [ usEnglishLanguage
+    , germanLanguage
+    , austrianGermanLanguage
+    , japaneseLanguage
+    ]
+
+
+translate : String -> Translations
+translate json =
+    Result.withDefault initialTranslations
+        (Json.Decode.decodeString decodeTranslations json)
 
 
 english : Translations
 english =
-    Result.withDefault initialTranslations
-        (Json.Decode.decodeString decodeTranslations
-            """
+    translate """
 {
   "language": "Language",
   "location": "Location",
@@ -49,14 +93,11 @@ english =
   }
 }
 """
-        )
 
 
 german : Translations
 german =
-    Result.withDefault initialTranslations
-        (Json.Decode.decodeString decodeTranslations
-            """
+    translate """
 {
   "language": "Sprache",
   "location": "Region",
@@ -68,14 +109,11 @@ german =
   }
 }
 """
-        )
 
 
 japanese : Translations
 japanese =
-    Result.withDefault initialTranslations
-        (Json.Decode.decodeString decodeTranslations
-            """
+    translate """
 {
   "language": "言語",
   "location": "場所",
@@ -87,4 +125,3 @@ japanese =
   }
 }
 """
-        )

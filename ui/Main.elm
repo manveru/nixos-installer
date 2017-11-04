@@ -14,9 +14,8 @@ import InstallerTranslation
     exposing
         ( Language
         , languages
-        , usEnglishLanguage
-        , english
-        , german
+        , defaultLanguage
+        , defaultTranslation
         )
 
 
@@ -32,8 +31,8 @@ main =
 
 init : ( Model, Cmd Msg )
 init =
-    ( { language = usEnglishLanguage
-      , translation = english
+    ( { language = defaultLanguage
+      , translation = defaultTranslation
       , step = LanguageStep
       , disk = Nothing
       , timezone = Nothing
@@ -72,6 +71,11 @@ nullDisk =
 
 type alias Timezone =
     { country : String, coords : String, name : String }
+
+
+nullTimezone : Timezone
+nullTimezone =
+    { country = "", coords = "", name = "" }
 
 
 type Step
@@ -141,7 +145,13 @@ update msg model =
                 found =
                     findLanguage languageName
             in
-                ( { model | language = found, translation = found.translation }, Cmd.none )
+                ( { model
+                    | language = found
+                    , translation = found.translation
+                    , timezone = findTimezone model found.timezone
+                  }
+                , Cmd.none
+                )
 
         OpenStep new ->
             ( { model | step = new }, Cmd.none )
@@ -171,7 +181,7 @@ locationStepView model =
             , select [ onInput SetTimezone, id "timezone", name "timezone" ]
                 (List.append
                     [ option [] [] ]
-                    (List.map timezoneItem model.timezones)
+                    (List.map (timezoneItem model.timezone) model.timezones)
                 )
             ]
         ]
@@ -274,7 +284,7 @@ findDisk model diskPath =
 
 findLanguage : String -> Language
 findLanguage name =
-    Maybe.withDefault usEnglishLanguage
+    Maybe.withDefault defaultLanguage
         (List.head (List.filter (\lang -> lang.name == name) languages))
 
 
@@ -405,6 +415,10 @@ languageItem language =
     option [ Html.Attributes.value language.name ] [ text language.name ]
 
 
-timezoneItem : { a | name : String } -> Html msg
-timezoneItem timezone =
-    option [ Html.Attributes.value timezone.name ] [ text timezone.name ]
+timezoneItem : Maybe Timezone -> Timezone -> Html msg
+timezoneItem current timezone =
+    option
+        [ Html.Attributes.value timezone.name
+        , selected ((Maybe.withDefault nullTimezone current) == timezone)
+        ]
+        [ text timezone.name ]
