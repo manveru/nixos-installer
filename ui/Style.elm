@@ -4,8 +4,8 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 
 
-backgroundStyle : Html.Attribute msg
-backgroundStyle =
+layoutStyle : Html.Attribute msg
+layoutStyle =
     style
         [ ( "background-image", "url(\"logo.svg\")" )
         , ( "background-attachment", "fixed" )
@@ -13,20 +13,18 @@ backgroundStyle =
         , ( "background-repeat", "no-repeat" )
         , ( "background-size", "contain" )
         , ( "background-color", "dimgrey" )
-        , ( "width", "100vw" )
         , ( "min-height", "100vh" )
         , ( "display", "flex" )
+        , ( "flex-flow", "row wrap" )
         ]
 
 
 formStyle : Html.Attribute msg
 formStyle =
     style
-        [ ( "margin", "0 0" )
-        , ( "padding", "5vw" )
-        , ( "background"
-          , "rgba(255,255,255,0.6)"
-          )
+        [ ( "width", "calc(80vw - 2em)" )
+        , ( "padding", "1em" )
+        , ( "background", "rgba(255,255,255,0.6)" )
         ]
 
 
@@ -57,7 +55,12 @@ dangerButtonStyle =
 
 navStyle : Html.Attribute msg
 navStyle =
-    style [ ( "display", "inline-block" ), ( "width", "20vw" ) ]
+    style
+        [ ( "display", "inline-block" )
+        , ( "width", "20vw" )
+        , ( "height", "100vh" )
+        , ( "background", "rgba(81,170,255,0.8)" )
+        ]
 
 
 navLinkStyle : Bool -> Attribute msg
