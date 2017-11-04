@@ -17,7 +17,7 @@ defaultLanguage =
 
 defaultTranslation : Translations
 defaultTranslation =
-    english
+    defaultLanguage.translation
 
 
 type alias Language =

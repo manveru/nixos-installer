@@ -35,7 +35,7 @@ init =
       , translation = defaultTranslation
       , step = LanguageStep
       , disk = Nothing
-      , timezone = Nothing
+      , timezone = nullTimezone
       , username = ""
       , hostname = ""
       , password = ""
@@ -51,7 +51,7 @@ type alias Model =
     , translation : Translations
     , step : Step
     , disk : Maybe Disk
-    , timezone : Maybe Timezone
+    , timezone : Timezone
     , username : String
     , hostname : String
     , password : String
@@ -111,7 +111,12 @@ update msg model =
             ( model, Cmd.none )
 
         NewTimezones (Ok newTimezones) ->
-            ( { model | timezones = (List.sortBy .name newTimezones) }, Cmd.none )
+            ( { model
+                | timezones = (List.sortBy .name newTimezones)
+                , timezone = findTimezone newTimezones model.language.timezone
+              }
+            , Cmd.none
+            )
 
         NewTimezones (Err _) ->
             ( model, Cmd.none )
@@ -129,7 +134,7 @@ update msg model =
             ( { model | disk = findDisk model diskPath }, Cmd.none )
 
         SetTimezone timezoneName ->
-            ( { model | timezone = findTimezone model timezoneName }, Cmd.none )
+            ( { model | timezone = findTimezone model.timezones timezoneName }, Cmd.none )
 
         SetUsername new ->
             ( { model | username = new }, Cmd.none )
@@ -148,7 +153,7 @@ update msg model =
                 ( { model
                     | language = found
                     , translation = found.translation
-                    , timezone = findTimezone model found.timezone
+                    , timezone = findTimezone model.timezones found.timezone
                   }
                 , Cmd.none
                 )
@@ -179,10 +184,7 @@ locationStepView model =
         [ div [ formGroupStyle ]
             [ label [ for "timezone" ] [ text "Timezone:" ]
             , select [ onInput SetTimezone, id "timezone", name "timezone" ]
-                (List.append
-                    [ option [] [] ]
-                    (List.map (timezoneItem model.timezone) model.timezones)
-                )
+                (List.map (timezoneItem model.timezone) model.timezones)
             ]
         ]
 
@@ -220,7 +222,7 @@ languageStepView : Model -> Html Msg
 languageStepView model =
     mainLayout model
         [ select [ onInput SetLanguage, id "language", name "language" ]
-            (List.map languageItem languages)
+            (List.map (languageItem model.language) languages)
         ]
 
 
@@ -288,9 +290,10 @@ findLanguage name =
         (List.head (List.filter (\lang -> lang.name == name) languages))
 
 
-findTimezone : Model -> String -> Maybe Timezone
-findTimezone model timezoneName =
-    List.head (List.filter (\timezone -> timezone.name == timezoneName) model.timezones)
+findTimezone : List Timezone -> String -> Timezone
+findTimezone timezones timezoneName =
+    Maybe.withDefault nullTimezone
+        (List.head (List.filter (\timezone -> timezone.name == timezoneName) timezones))
 
 
 decodeDisks : Decoder (List Disk)
@@ -342,16 +345,7 @@ saveEncoder model =
           --           Json.Encode.null
           -- )
           ( "time"
-          , Json.Encode.object
-                [ ( "timeZone"
-                  , case model.timezone of
-                        Just timezone ->
-                            Json.Encode.string timezone.name
-
-                        Nothing ->
-                            Json.Encode.null
-                  )
-                ]
+          , Json.Encode.object [ ( "timeZone", Json.Encode.string model.timezone.name ) ]
           )
         , ( "users"
           , Json.Encode.object
@@ -368,12 +362,7 @@ saveEncoder model =
                 ]
           )
         , ( "networking"
-          , Json.Encode.object
-                [ ( "hostName"
-                  , Json.Encode.string
-                        model.hostname
-                  )
-                ]
+          , Json.Encode.object [ ( "hostName", Json.Encode.string model.hostname ) ]
           )
         ]
 
@@ -410,15 +399,19 @@ diskItem disk =
         ]
 
 
-languageItem : Language -> Html msg
-languageItem language =
-    option [ Html.Attributes.value language.name ] [ text language.name ]
+languageItem : Language -> Language -> Html msg
+languageItem current language =
+    option
+        [ Html.Attributes.value language.name
+        , selected (current == language)
+        ]
+        [ text language.name ]
 
 
-timezoneItem : Maybe Timezone -> Timezone -> Html msg
+timezoneItem : Timezone -> Timezone -> Html msg
 timezoneItem current timezone =
     option
         [ Html.Attributes.value timezone.name
-        , selected ((Maybe.withDefault nullTimezone current) == timezone)
+        , selected (current == timezone)
         ]
         [ text timezone.name ]
