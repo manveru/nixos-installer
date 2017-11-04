@@ -24,7 +24,7 @@ stdenv.mkDerivation {
 
   installPhase = ''
     mkdir -p $out/ui
-    cp *.scm tests/ lib/ bin/ $out -R
+    cp *.scm template/ tests/ lib/ bin/ $out -R
     for i in $(find $out/bin -type f); do
         echo "Wrapping $i ..."
         chmod +x "$i"

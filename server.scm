@@ -13,6 +13,11 @@
 
 (define sym 'access-control-allow-origin)
 
+(define installer-save-file
+  (or (getenv "INSTALLER_SAVE_FILE") "installer.json"))
+(define installer-conf-file
+  (or (getenv "INSTALLER_CONF_FILE") "configuration.nix"))
+
 (define (request-path-components request)
   (split-and-decode-uri-path (uri-path (request-uri request))))
 
@@ -56,11 +61,17 @@
 
 (define detected-disks (detect-disks))
 (define detected-timezones (timezones))
+
 (define (read-file path)
   (let* ((port (open-input-file path))
          (body (get-string-all port)))
     (close-input-port port)
     body))
+
+(define (write-file path data)
+  (let* ((port (open-output-file path)))
+    (display data port)
+    (close-output-port port)))
 
 (define (installer-handler request request-body)
   (cond ((eq? (request-method request) 'GET)
@@ -80,11 +91,11 @@
         ((eq? (request-method request) 'POST)
          (match (request-path-components request)
            (("save")
-            (display (jq (utf8->string request-body) "."))
+            (display (utf8->string request-body))
             (newline)
-            (let ((port (open-output-file "template/out.json")))
-                   (display (jq (utf8->string request-body) ".") port)
-                   (close-output-port port))
+            (write-file installer-save-file (utf8->string request-body))
+            (write-file installer-conf-file (read-file "template/configuration.nix"))
+            (write-file "/mnt/etc/nixos/ssh.nix" (read-file "template/ssh.nix"))
             (send-text "saved"))))))
 
 (run-server installer-handler 'http '(#:port 8081))

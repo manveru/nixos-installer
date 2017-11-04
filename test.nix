@@ -18,10 +18,13 @@ makeTest {
         htop iotop tmux strace file gzip
       ];
 
-      systemd.services."installer-service" = {
+      systemd.services."nixos-installer" = {
         wantedBy = [ "multi-user.target" ];
-        script = "${installer}/bin/start-installer";
-        serviceConfig.WorkingDirectory = installer;
+        serviceConfig =
+          { ExecStart = "${installer}/bin/start-installer";
+            WorkingDirectory = installer;
+            Restart = "always";
+          };
       };
 
       nix = {
@@ -38,7 +41,7 @@ makeTest {
   testScript = ''
     startAll;
 
-    $box->waitForUnit("installer-service.service");
+    $box->waitForUnit("nixos-installer");
     $box->waitForOpenPort(8081);
 
     subtest "Shows up", sub {

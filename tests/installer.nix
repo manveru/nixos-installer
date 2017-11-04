@@ -2,56 +2,16 @@
 
 with import <nixpkgs/nixos/lib/testing.nix> { inherit system; };
 with import <nixpkgs/nixos/lib/qemu-flags.nix>;
+let
+  pkgs = import <nixpkgs> { overlays = [ (import ../overlay.nix) ]; };
+  installer = pkgs.callPackage ../. {};
+in
 with pkgs.lib;
-
 let
 
   # The configuration to install.
-  makeConfig = { bootLoader, grubVersion, grubDevice, grubIdentifier
-               , extraConfig, forceGrubReinstallCount ? 0
-               }:
-    pkgs.writeText "configuration.nix" ''
-      { config, lib, pkgs, modulesPath, ... }:
-
-      { imports =
-          [ ./hardware-configuration.nix
-            <nixpkgs/nixos/modules/testing/test-instrumentation.nix>
-          ];
-
-        # To ensure that we can rebuild the grub configuration on the nixos-rebuild
-        system.extraDependencies = with pkgs; [ stdenvNoCC ];
-
-        ${optionalString (bootLoader == "grub") ''
-          boot.loader.grub.version = ${toString grubVersion};
-          ${optionalString (grubVersion == 1) ''
-            boot.loader.grub.splashImage = null;
-          ''}
-          boot.loader.grub.device = "${grubDevice}";
-          boot.loader.grub.extraConfig = "serial; terminal_output.serial";
-          boot.loader.grub.fsIdentifier = "${grubIdentifier}";
-
-          boot.loader.grub.configurationLimit = 100 + ${toString forceGrubReinstallCount};
-        ''}
-
-        ${optionalString (bootLoader == "systemd-boot") ''
-          boot.loader.systemd-boot.enable = true;
-        ''}
-
-        users.extraUsers.alice = {
-          isNormalUser = true;
-          home = "/home/alice";
-          description = "Alice Foobar";
-        };
-
-        hardware.enableAllFirmware = lib.mkForce false;
-
-        ${replaceChars ["\n"] ["\n  "] extraConfig}
-      }
-    '';
-
-
-  channelContents = [ pkgs.rlwrap ];
-
+  makeConfig = {}:
+    pkgs.writeText "configuration.nix" (builtins.readFile ../template/qemu.nix);
 
   # The test script boots a NixOS VM, installs NixOS on an empty hard
   # disk, and then reboot from the hard disk.  It's parameterized with
@@ -73,24 +33,29 @@ let
 
       # Make sure that we get a login prompt etc.
       $machine->succeed("echo hello");
-      #$machine->waitForUnit('getty@tty2');
-      #$machine->waitForUnit("rogue");
+      $machine->waitForUnit("nixos-installer");
       $machine->waitForUnit("nixos-manual");
 
       # Wait for hard disks to appear in /dev
       $machine->succeed("udevadm settle");
 
-      # Partition the disk.
-      ${createPartitions}
+      $machine->waitForOpenPort(8081);
+      $machine->succeed("curl -f http://localhost:8081");
 
-      # Create the NixOS configuration.
-      $machine->succeed("nixos-generate-config --root /mnt");
+      subtest "Configures the system", sub {
+        $machine->succeed('cd ${installer}; ls -R >&2');
 
-      $machine->succeed("cat /mnt/etc/nixos/hardware-configuration.nix >&2");
+        # TODO: This should be done by the installer
+        ${createPartitions}
+        $machine->succeed("nixos-generate-config --root /mnt");
 
-      $machine->copyFileFromHost(
-          "${ makeConfig { inherit bootLoader grubVersion grubDevice grubIdentifier extraConfig; } }",
-          "/mnt/etc/nixos/configuration.nix");
+        $machine->succeed('mkdir -p /mnt/etc/nixos');
+        $machine->succeed('curl -X POST -d \'{"time":{"timeZone":"Africa/Bamako"},"users":{"extraUsers":{"user":{"name":"user","initialPassword":"pass"}}},"networking":{"hostName":"host"}}\' http://localhost:8081/save');
+        $machine->sleep(1);
+        $machine->succeed("cat /mnt/etc/nixos/installer.json >&2");
+        $machine->succeed("cat /mnt/etc/nixos/configuration.nix >&2");
+        $machine->succeed("cat /mnt/etc/nixos/hardware-configuration.nix >&2");
+      };
 
       # Perform the installation.
       $machine->succeed("nixos-install < /dev/null >&2");
@@ -139,9 +104,7 @@ let
       $machine->succeed("su alice -l -c 'nix-env -iA nixos.procps' >&2");
 
       # We need to a writable nix-store on next boot.
-      $machine->copyFileFromHost(
-          "${ makeConfig { inherit bootLoader grubVersion grubDevice grubIdentifier extraConfig; forceGrubReinstallCount = 1; } }",
-          "/etc/nixos/configuration.nix");
+      $machine->copyFileFromHost("${ makeConfig {} }", "/etc/nixos/configuration.nix");
 
       # Check whether nixos-rebuild works.
       $machine->succeed("nixos-rebuild switch >&2");
@@ -157,9 +120,7 @@ let
       $machine = createMachine({ ${hdFlags} qemuFlags => "${qemuFlags}", name => "rebuild-switch" });
       ${preBootCommands}
       $machine->waitForUnit("multi-user.target");
-      $machine->copyFileFromHost(
-          "${ makeConfig { inherit bootLoader grubVersion grubDevice grubIdentifier extraConfig; forceGrubReinstallCount = 2; } }",
-          "/etc/nixos/configuration.nix");
+      $machine->copyFileFromHost("${ makeConfig {} }", "/etc/nixos/configuration.nix");
       $machine->succeed("nixos-rebuild boot >&2");
       $machine->shutdown;
 
@@ -207,10 +168,8 @@ let
             # installer. This ensures the target disk (/dev/vda) is
             # the same during and after installation.
             virtualisation.emptyDiskImages = [ 512 ];
-            virtualisation.bootDevice =
-              if grubVersion == 1 then "/dev/sdb" else "/dev/vdb";
-            virtualisation.qemu.diskInterface =
-              if grubVersion == 1 then "scsi" else "virtio";
+            virtualisation.bootDevice = "/dev/vdb";
+            virtualisation.qemu.diskInterface = "virtio";
 
             boot.loader.systemd-boot.enable = mkIf (bootLoader == "systemd-boot") true;
 
@@ -218,23 +177,34 @@ let
 
             # The test cannot access the network, so any packages we
             # need must be included in the VM.
-            system.extraDependencies = with pkgs;
-              [ sudo
-                libxml2.bin
-                libxslt.bin
-                docbook5
-                docbook5_xsl
-                unionfs-fuse
-                ntp
-                perlPackages.XMLLibXML
-                perlPackages.ListCompare
+            system.extraDependencies = with pkgs; [
+              sudo
+              libxml2.bin
+              libxslt.bin
+              docbook5
+              docbook5_xsl
+              unionfs-fuse
+              ntp
+              perlPackages.XMLLibXML
+              perlPackages.ListCompare
 
-                # add curl so that rather than seeing the test attempt to download
-                # curl's tarball, we see what it's trying to download
-                curl
-              ]
-              ++ optional (bootLoader == "grub" && grubVersion == 1) pkgs.grub
-              ++ optionals (bootLoader == "grub" && grubVersion == 2) [ pkgs.grub2 pkgs.grub2_efi ];
+              # add curl so that rather than seeing the test attempt to download
+              # curl's tarball, we see what it's trying to download
+              curl
+            ];
+
+            systemd.services."nixos-installer" = {
+              wantedBy = [ "multi-user.target" ];
+              environment = {
+                "INSTALLER_SAVE_FILE" = "/mnt/etc/nixos/installer.json";
+                "INSTALLER_CONF_FILE" = "/mnt/etc/nixos/configuration.nix";
+              };
+              serviceConfig =
+                { ExecStart = "${installer}/bin/start-installer";
+                  WorkingDirectory = "/tmp";
+                  Restart = "always";
+                };
+            };
 
             nix.binaryCaches = mkForce [ ];
           };
@@ -247,25 +217,25 @@ let
       };
     };
 in {
-
-  # !!! `parted mkpart' seems to silently create overlapping partitions.
-
-
-  # The (almost) simplest partitioning scheme: a swap partition and
-  # one big filesystem partition.
-  simple = makeInstallerTest "simple"
+  simpleUefiSystemdBoot = makeInstallerTest "simpleUefiSystemdBoot"
     { createPartitions =
         ''
           $machine->succeed(
-              "parted --script /dev/vda mklabel msdos",
-              "parted --script /dev/vda -- mkpart primary linux-swap 1M 1024M",
-              "parted --script /dev/vda -- mkpart primary ext2 1024M -1s",
+              "parted --script /dev/vda mklabel gpt",
+              "parted --script /dev/vda -- mkpart ESP fat32 1M 50MiB", # /boot
+              "parted --script /dev/vda -- set 1 boot on",
+              "parted --script /dev/vda -- mkpart primary linux-swap 50MiB 1024MiB",
+              "parted --script /dev/vda -- mkpart primary ext2 1024MiB -1MiB", # /
               "udevadm settle",
-              "mkswap /dev/vda1 -L swap",
+              "mkswap /dev/vda2 -L swap",
               "swapon -L swap",
-              "mkfs.ext3 -L nixos /dev/vda2",
+              "mkfs.ext3 -L nixos /dev/vda3",
               "mount LABEL=nixos /mnt",
+              "mkfs.vfat -n BOOT /dev/vda1",
+              "mkdir -p /mnt/boot",
+              "mount LABEL=BOOT /mnt/boot",
           );
         '';
+        bootLoader = "systemd-boot";
     };
 }
