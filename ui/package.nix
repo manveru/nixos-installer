@@ -3,6 +3,10 @@
     version = "2.0.4";
     sha256 = "13kc3jim6js827h91m6wx6n16qb3b6p6ms6789ks106zpwmhfwxv";
   };
+  "ChristophP/elm-i18next" = {
+    version = "2.0.0";
+    sha256 = "0pnamwb3nkdr0sal25nbm1awnqcya11c93daqmrzcrwlrxqjc3ll";
+  };
   "elm-lang/html" = {
     version = "2.0.0";
     sha256 = "05sqjd5n8jnq4lv5v0ipcg98b8im1isnnl4wns1zzn4w5nbrjjzi";

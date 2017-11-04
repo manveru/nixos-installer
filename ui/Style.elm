@@ -15,13 +15,14 @@ backgroundStyle =
         , ( "background-color", "dimgrey" )
         , ( "width", "100vw" )
         , ( "min-height", "100vh" )
+        , ( "display", "flex" )
         ]
 
 
 formStyle : Html.Attribute msg
 formStyle =
     style
-        [ ( "margin", "0 5vw" )
+        [ ( "margin", "0 0" )
         , ( "padding", "5vw" )
         , ( "background"
           , "rgba(255,255,255,0.6)"
@@ -51,4 +52,26 @@ dangerButtonStyle =
         , ( "height", "3em" )
         , ( "width", "25%" )
         , ( "margin", "3em" )
+        ]
+
+
+navStyle : Html.Attribute msg
+navStyle =
+    style [ ( "display", "inline-block" ), ( "width", "20vw" ) ]
+
+
+navLinkStyle : Bool -> Attribute msg
+navLinkStyle active =
+    style
+        [ ( "display", "block" )
+        , ( "line-height", "1em" )
+        , ( "border", "1px solid black" )
+        , ( "padding", "1em" )
+        , ( "font-size", "1.5em" )
+        , ( "background"
+          , if active then
+                "#5EFFF8"
+            else
+                "#51AAFF"
+          )
         ]

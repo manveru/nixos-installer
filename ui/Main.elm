@@ -23,55 +23,113 @@ main =
 
 view : Model -> Html Msg
 view model =
-    div [ backgroundStyle ]
-        [ div [ formStyle ]
-            [ h1 [] [ text "NixOS Installer" ]
-            , div [ formGroupStyle ]
-                [ label [ for "disk" ] [ text "Install to:" ]
-                , select [ onInput SetDisk, id "disk", name "disk" ]
-                    (List.append
-                        [ option [] [] ]
-                        (List.map diskItem model.disks)
-                    )
-                ]
-            , div [ formGroupStyle ]
-                [ label [ for "timezone" ] [ text "Timezone:" ]
-                , select [ onInput SetTimezone, id "timezone", name "timezone" ]
-                    (List.append
-                        [ option [] [] ]
-                        (List.map timezoneItem model.timezones)
-                    )
-                ]
-            , div [ formGroupStyle, for "hostname" ]
-                [ label [] [ text "Host name:" ]
-                , input [ onInput SetHostname, id "hostname", name "hostname" ] []
-                ]
-            , div [ formGroupStyle, for "username" ]
-                [ label [] [ text "Username:" ]
-                , input [ onInput SetUsername, id "username", name "username" ] []
-                ]
-            , div [ formGroupStyle, for "password" ]
-                [ label [] [ text "Password:" ]
-                , input [ onInput SetPassword, id "password", type_ "password", name "password" ] []
-                ]
-            , button
-                [ successButtonStyle
-                , onClick SaveConfig
-                ]
-                [ text "Save configuration" ]
-            , input
-                [ type_ "submit"
-                , dangerButtonStyle
-                , Html.Attributes.value "Perform Installation"
-                ]
-                []
+    case model.step of
+        LanguageStep ->
+            languageStepView model
+
+        PartitionStep ->
+            partitionStepView model
+
+        default ->
+            usersStepView model
+
+
+usersStepView : Model -> Html Msg
+usersStepView model =
+    mainLayout model
+        [ h1 [] [ text "NixOS Installer" ]
+        , div [ formGroupStyle ]
+            [ label [ for "timezone" ] [ text "Timezone:" ]
+            , select [ onInput SetTimezone, id "timezone", name "timezone" ]
+                (List.append
+                    [ option [] [] ]
+                    (List.map timezoneItem model.timezones)
+                )
             ]
+        , div [ formGroupStyle, for "hostname" ]
+            [ label [] [ text "Host name:" ]
+            , input [ onInput SetHostname, id "hostname", name "hostname" ] []
+            ]
+        , div [ formGroupStyle, for "username" ]
+            [ label [] [ text "Username:" ]
+            , input [ onInput SetUsername, id "username", name "username" ] []
+            ]
+        , div [ formGroupStyle, for "password" ]
+            [ label [] [ text "Password:" ]
+            , input [ onInput SetPassword, id "password", type_ "password", name "password" ] []
+            ]
+        , button
+            [ successButtonStyle
+            , onClick SaveConfig
+            ]
+            [ text "Save configuration" ]
+        , input
+            [ type_ "submit"
+            , dangerButtonStyle
+            , Html.Attributes.value "Perform Installation"
+            ]
+            []
+        ]
+
+
+languageStepView : Model -> Html Msg
+languageStepView model =
+    mainLayout model
+        [ h1 [] [ text "Hello World!" ] ]
+
+
+partitionStepView : Model -> Html Msg
+partitionStepView model =
+    mainLayout model
+        [ div
+            []
+            [ label [ for "disk" ] [ text "Install to:" ]
+            , select [ onInput SetDisk, id "disk", name "disk" ]
+                (List.append
+                    [ option [] [] ]
+                    (List.map diskItem model.disks)
+                )
+            , case model.disk of
+                Nothing ->
+                    div [] [ text "Select a disk" ]
+
+                Just disk ->
+                    dl []
+                        [ dt [] [ text "Path:" ]
+                        , dd [] [ text (disk.path) ]
+                        , dt [] [ text "Model:" ]
+                        , dd [] [ text (disk.model) ]
+                        , dt [] [ text "Serial:" ]
+                        , dd [] [ text (disk.serial) ]
+                        , dt [] [ text "Size:" ]
+                        , dd [] [ text (disk.size) ]
+                        ]
+            ]
+        ]
+
+
+navLink model step label =
+    a [ navLinkStyle (model.step == step), onClick (OpenStep step) ] [ text label ]
+
+
+mainLayout model children =
+    div [ backgroundStyle ]
+        [ div [ navStyle ]
+            [ navLink model LanguageStep "Language"
+            , navLink model LocationStep "Location"
+            , navLink model KeyboardStep "Keyboard"
+            , navLink model PartitionStep "Partition"
+            , navLink model UsersStep "Users"
+            , navLink model OverlayStep "Overlay"
+            ]
+        , div [ formStyle ] children
         ]
 
 
 init : ( Model, Cmd Msg )
 init =
     ( Model
+        LanguageStep
         Nothing
         Nothing
         ""
@@ -87,12 +145,26 @@ type alias Disk =
     { path : String, model : String, serial : String, size : String }
 
 
+nullDisk =
+    { path = "", model = "", serial = "", size = "" }
+
+
 type alias Timezone =
     { country : String, coords : String, name : String }
 
 
+type Step
+    = LanguageStep
+    | LocationStep
+    | KeyboardStep
+    | PartitionStep
+    | UsersStep
+    | OverlayStep
+
+
 type alias Model =
-    { disk : Maybe Disk
+    { step : Step
+    , disk : Maybe Disk
     , timezone : Maybe Timezone
     , username : String
     , hostname : String
@@ -112,6 +184,7 @@ type Msg
     | SetHostname String
     | SetUsername String
     | SetPassword String
+    | OpenStep Step
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -153,6 +226,9 @@ update msg model =
         SetPassword new ->
             ( { model | password = new }, Cmd.none )
 
+        OpenStep newStep ->
+            ( { model | step = newStep }, Cmd.none )
+
 
 findDisk : Model -> String -> Maybe Disk
 findDisk model diskPath =
@@ -179,6 +255,11 @@ decodeDisks =
 getDisks : Cmd Msg
 getDisks =
     (Http.send NewDisks (Http.get "http://localhost:8081/disks" decodeDisks))
+
+
+diskAttribute : Maybe Disk -> (Disk -> a) -> a
+diskAttribute disk extractor =
+    disk |> Maybe.withDefault nullDisk |> extractor
 
 
 decodeTimezones : Decoder (List Timezone)
@@ -272,8 +353,7 @@ diskItem : Disk -> Html msg
 diskItem disk =
     option [ Html.Attributes.value disk.path ]
         [ text disk.model
-        , text (" (" ++ disk.serial)
-        , text (" with " ++ disk.size ++ ")")
+        , text (" (" ++ disk.size ++ ")")
         ]
 
 
