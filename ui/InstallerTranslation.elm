@@ -1,12 +1,12 @@
 module InstallerTranslation
     exposing
         ( Language
-        , languages
         , defaultLanguage
         , defaultTranslation
+        , languages
         )
 
-import I18Next exposing (Translations, initialTranslations, decodeTranslations)
+import I18Next exposing (Translations, decodeTranslations, initialTranslations)
 import Json.Decode exposing (decodeString)
 
 

@@ -3,20 +3,20 @@ module Main exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
-import Json.Decode exposing (..)
-import Json.Encode exposing (..)
 import Http
-import List
-import Maybe exposing (withDefault)
-import Style exposing (..)
-import I18Next exposing (t, Translations)
+import I18Next exposing (Translations, t)
 import InstallerTranslation
     exposing
         ( Language
-        , languages
         , defaultLanguage
         , defaultTranslation
+        , languages
         )
+import Json.Decode exposing (..)
+import Json.Encode exposing (..)
+import List
+import Maybe
+import Style exposing (..)
 
 
 main : Program Never Model Msg
@@ -78,15 +78,6 @@ nullTimezone =
     { country = "", coords = "", name = "" }
 
 
-type Step
-    = LanguageStep
-    | LocationStep
-    | KeyboardStep
-    | PartitionStep
-    | UsersStep
-    | OverlayStep
-
-
 type Msg
     = NewDisks (Result Http.Error (List Disk))
     | NewTimezones (Result Http.Error (List Timezone))
@@ -112,7 +103,7 @@ update msg model =
 
         NewTimezones (Ok newTimezones) ->
             ( { model
-                | timezones = (List.sortBy .name newTimezones)
+                | timezones = List.sortBy .name newTimezones
                 , timezone = findTimezone newTimezones model.language.timezone
               }
             , Cmd.none
@@ -150,110 +141,125 @@ update msg model =
                 found =
                     findLanguage languageName
             in
-                ( { model
-                    | language = found
-                    , translation = found.translation
-                    , timezone = findTimezone model.timezones found.timezone
-                  }
-                , Cmd.none
-                )
+            ( { model
+                | language = found
+                , translation = found.translation
+                , timezone = findTimezone model.timezones found.timezone
+              }
+            , Cmd.none
+            )
 
         OpenStep new ->
             ( { model | step = new }, Cmd.none )
 
 
+type Step
+    = LanguageStep
+    | LocationStep
+    | KeyboardStep
+    | PartitionStep
+    | UsersStep
+    | OverlayStep
+
+
 view : Model -> Html Msg
 view model =
-    case model.step of
-        LanguageStep ->
-            languageStepView model
-
-        PartitionStep ->
-            partitionStepView model
-
-        LocationStep ->
-            locationStepView model
-
-        default ->
-            usersStepView model
-
-
-locationStepView : Model -> Html Msg
-locationStepView model =
     mainLayout model
-        [ div [ formGroupStyle ]
-            [ label [ for "timezone" ] [ text "Timezone:" ]
-            , select [ onInput SetTimezone, id "timezone", name "timezone" ]
-                (List.map (timezoneItem model.timezone) model.timezones)
-            ]
-        ]
+        (case model.step of
+            LanguageStep ->
+                languageStepView model
+
+            PartitionStep ->
+                partitionStepView model
+
+            LocationStep ->
+                locationStepView model
+
+            UsersStep ->
+                usersStepView model
+
+            default ->
+                overlayStepView model
+        )
 
 
-usersStepView : Model -> Html Msg
+usersStepView : Model -> List (Html Msg)
 usersStepView model =
-    mainLayout model
-        [ div [ formGroupStyle, for "hostname" ]
-            [ label [] [ text "Host name:" ]
-            , input [ onInput SetHostname, id "hostname", name "hostname" ] []
-            ]
-        , div [ formGroupStyle, for "username" ]
-            [ label [] [ text "Username:" ]
-            , input [ onInput SetUsername, id "username", name "username" ] []
-            ]
-        , div [ formGroupStyle, for "password" ]
-            [ label [] [ text "Password:" ]
-            , input [ onInput SetPassword, id "password", type_ "password", name "password" ] []
-            ]
-        , button
-            [ successButtonStyle
-            , onClick SaveConfig
-            ]
-            [ text "Save configuration" ]
-        , input
-            [ type_ "submit"
-            , dangerButtonStyle
-            , Html.Attributes.value "Perform Installation"
-            ]
-            []
+    [ div [] [] ]
+
+
+locationStepView : Model -> List (Html Msg)
+locationStepView model =
+    [ div [ formGroupStyle ]
+        [ label [ for "timezone" ] [ text "Timezone:" ]
+        , select [ onInput SetTimezone, id "timezone", name "timezone" ]
+            (List.map (timezoneItem model.timezone) model.timezones)
         ]
+    ]
 
 
-languageStepView : Model -> Html Msg
+overlayStepView : Model -> List (Html Msg)
+overlayStepView model =
+    [ div [ formGroupStyle, for "hostname" ]
+        [ label [] [ text "Host name:" ]
+        , input [ onInput SetHostname, id "hostname", name "hostname" ] []
+        ]
+    , div [ formGroupStyle, for "username" ]
+        [ label [] [ text "Username:" ]
+        , input [ onInput SetUsername, id "username", name "username" ] []
+        ]
+    , div [ formGroupStyle, for "password" ]
+        [ label [] [ text "Password:" ]
+        , input [ onInput SetPassword, id "password", type_ "password", name "password" ] []
+        ]
+    , button
+        [ successButtonStyle
+        , onClick SaveConfig
+        ]
+        [ text "Save configuration" ]
+    , input
+        [ type_ "submit"
+        , dangerButtonStyle
+        , Html.Attributes.value "Perform Installation"
+        ]
+        []
+    ]
+
+
+languageStepView : Model -> List (Html Msg)
 languageStepView model =
-    mainLayout model
-        [ select [ onInput SetLanguage, id "language", name "language" ]
-            (List.map (languageItem model.language) languages)
-        ]
+    [ select [ onInput SetLanguage, id "language", name "language" ]
+        (List.map (languageItem model.language) languages)
+    ]
 
 
-partitionStepView : Model -> Html Msg
+partitionStepView : Model -> List (Html Msg)
 partitionStepView model =
-    mainLayout model
-        [ div
-            []
-            [ label [ for "disk" ] [ text "Install to:" ]
-            , select [ onInput SetDisk, id "disk", name "disk" ]
-                (List.append
-                    [ option [] [] ]
-                    (List.map diskItem model.disks)
-                )
-            , case model.disk of
-                Nothing ->
-                    div [] [ text "Select a disk" ]
+    [ div
+        []
+        [ label [ for "disk" ] [ text "Install to:" ]
+        , select [ onInput SetDisk, id "disk", name "disk" ]
+            (List.append
+                [ option [] [] ]
+                (List.map diskItem model.disks)
+            )
+        , case model.disk of
+            Nothing ->
+                div [] [ text "Select a disk" ]
 
-                Just disk ->
-                    dl []
-                        [ dt [] [ text "Path:" ]
-                        , dd [] [ text (disk.path) ]
-                        , dt [] [ text "Model:" ]
-                        , dd [] [ text (disk.model) ]
-                        , dt [] [ text "Serial:" ]
-                        , dd [] [ text (disk.serial) ]
-                        , dt [] [ text "Size:" ]
-                        , dd [] [ text (disk.size) ]
-                        ]
-            ]
+            Just disk ->
+                dl []
+                    [ dt [] [ text "Path:" ]
+                    , dd [] [ text disk.path ]
+                    , dt [] [ text "Model:" ]
+                    , dd [] [ text disk.model ]
+                    , dt [] [ text "Serial:" ]
+                    , dd [] [ text disk.serial ]
+                    , dt [] [ text "Size:" ]
+                    , dd [] [ text disk.size ]
+                    ]
         ]
+    ]
 
 
 navLink : { a | step : Step } -> Step -> String -> Html Msg
@@ -310,7 +316,7 @@ decodeDisks =
 
 getDisks : Cmd Msg
 getDisks =
-    (Http.send NewDisks (Http.get "http://localhost:8081/disks" decodeDisks))
+    Http.send NewDisks (Http.get "http://localhost:8081/disks" decodeDisks)
 
 
 diskAttribute : Maybe Disk -> (Disk -> a) -> a
@@ -331,7 +337,7 @@ decodeTimezones =
 
 getTimezones : Cmd Msg
 getTimezones =
-    (Http.send NewTimezones (Http.get "http://localhost:8081/timezones" decodeTimezones))
+    Http.send NewTimezones (Http.get "http://localhost:8081/timezones" decodeTimezones)
 
 
 saveEncoder : Model -> Json.Encode.Value
@@ -378,7 +384,7 @@ postSaveConfig model =
         body =
             model |> saveEncoder |> Http.jsonBody
     in
-        Http.post "http://localhost:8081/save" body saveConfigDecoder
+    Http.post "http://localhost:8081/save" body saveConfigDecoder
 
 
 saveConfig : Model -> Cmd Msg
