@@ -17,6 +17,8 @@ import Json.Encode exposing (..)
 import List
 import Material
 import Material.Layout as Layout
+import Material.Options as Options
+import Material.Typography as Typo
 import Maybe
 
 
@@ -235,8 +237,8 @@ overlayStepView model =
 
 languageStepView : Model -> List (Html Msg)
 languageStepView model =
-    [ h1 [] [ text "Welcome to the NixOS Installer." ]
-    , p [] [ text "Please select your language and continue to the next step." ]
+    [ Options.styled p [ Typo.center, Typo.display2 ] [ text "Welcome to the NixOS Installer." ]
+    , Options.styled p [ Typo.subhead ] [ text "Please select your language and continue to the next step." ]
     , select [ onInput SetLanguage, id "language", name "language" ]
         (List.map (languageItem model.language) languages)
     ]
