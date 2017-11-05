@@ -16,8 +16,10 @@ import Json.Decode exposing (..)
 import Json.Encode exposing (..)
 import List
 import Material
+import Material.Grid exposing (Device(..), cell, grid, size)
 import Material.Layout as Layout
 import Material.Options as Options
+import Material.Textfield as Textfield
 import Material.Typography as Typo
 import Maybe
 
@@ -40,11 +42,16 @@ init =
       , disk = Nothing
       , timezone = nullTimezone
       , username = ""
+      , fullname = ""
       , hostname = ""
-      , password = ""
+      , userPass = ""
+      , userPassAgain = ""
+      , rootPassword = ""
+      , rootPasswordAgain = ""
       , disks = []
       , timezones = []
       , mdl = Material.model
+      , focus = False
       , selectedTab = 0
       }
     , Cmd.batch [ getDisks, getTimezones ]
@@ -58,11 +65,16 @@ type alias Model =
     , disk : Maybe Disk
     , timezone : Timezone
     , username : String
+    , fullname : String
     , hostname : String
-    , password : String
+    , userPass : String
+    , userPassAgain : String
+    , rootPassword : String
+    , rootPasswordAgain : String
     , disks : List Disk
     , timezones : List Timezone
     , mdl : Material.Model
+    , focus : Bool
     , selectedTab : Int
     }
 
@@ -94,7 +106,11 @@ type Msg
     | SetTimezone String
     | SetHostname String
     | SetUsername String
-    | SetPassword String
+    | SetFullname String
+    | SetUserPass String
+    | SetUserPassAgain String
+    | SetRootPassword String
+    | SetRootPasswordAgain String
     | SetLanguage String
     | SelectTab Int
     | Mdl (Material.Msg Msg)
@@ -138,11 +154,23 @@ update msg model =
         SetUsername new ->
             ( { model | username = new }, Cmd.none )
 
+        SetFullname new ->
+            ( { model | fullname = new }, Cmd.none )
+
         SetHostname new ->
             ( { model | hostname = new }, Cmd.none )
 
-        SetPassword new ->
-            ( { model | password = new }, Cmd.none )
+        SetUserPass new ->
+            ( { model | userPass = new }, Cmd.none )
+
+        SetUserPassAgain new ->
+            ( { model | userPassAgain = new }, Cmd.none )
+
+        SetRootPassword new ->
+            ( { model | rootPassword = new }, Cmd.none )
+
+        SetRootPasswordAgain new ->
+            ( { model | rootPasswordAgain = new }, Cmd.none )
 
         SetLanguage languageName ->
             let
@@ -160,8 +188,8 @@ update msg model =
         SelectTab n ->
             ( { model | selectedTab = n }, Cmd.none )
 
-        Mdl _ ->
-            ( model, Cmd.none )
+        Mdl msg_ ->
+            Material.update Mdl msg_ model
 
 
 type Step
@@ -178,107 +206,27 @@ view model =
     mainLayout model
         (case model.selectedTab of
             0 ->
-                languageStepView model
+                languageView model
 
             1 ->
-                partitionStepView model
-
-            2 ->
-                locationStepView model
+                locationView model
 
             3 ->
-                usersStepView model
+                partitionView model
+
+            4 ->
+                usersView model
 
             default ->
-                overlayStepView model
+                overlayView model
         )
 
 
-usersStepView : Model -> List (Html Msg)
-usersStepView model =
-    [ div [] [] ]
-
-
-locationStepView : Model -> List (Html Msg)
-locationStepView model =
-    [ div []
-        [ label [ for "timezone" ] [ text "Timezone:" ]
-        , select [ onInput SetTimezone, id "timezone", name "timezone" ]
-            (List.map (timezoneItem model.timezone) model.timezones)
-        ]
-    ]
-
-
-overlayStepView : Model -> List (Html Msg)
-overlayStepView model =
-    [ div [ for "hostname" ]
-        [ label [] [ text "Host name:" ]
-        , input [ onInput SetHostname, id "hostname", name "hostname" ] []
-        ]
-    , div [ for "username" ]
-        [ label [] [ text "Username:" ]
-        , input [ onInput SetUsername, id "username", name "username" ] []
-        ]
-    , div [ for "password" ]
-        [ label [] [ text "Password:" ]
-        , input [ onInput SetPassword, id "password", type_ "password", name "password" ] []
-        ]
-    , button
-        [ onClick SaveConfig
-        ]
-        [ text "Save configuration" ]
-    , input
-        [ type_ "submit"
-        , Html.Attributes.value "Perform Installation"
-        ]
-        []
-    ]
-
-
-languageStepView : Model -> List (Html Msg)
-languageStepView model =
-    [ Options.styled p [ Typo.center, Typo.display2 ] [ text "Welcome to the NixOS Installer." ]
-    , Options.styled p [ Typo.subhead ] [ text "Please select your language and continue to the next step." ]
-    , select [ onInput SetLanguage, id "language", name "language" ]
-        (List.map (languageItem model.language) languages)
-    ]
-
-
-partitionStepView : Model -> List (Html Msg)
-partitionStepView model =
-    [ div
-        []
-        [ label [ for "disk" ] [ text "Install to:" ]
-        , select [ onInput SetDisk, id "disk", name "disk" ]
-            (List.append
-                [ option [] [] ]
-                (List.map diskItem model.disks)
-            )
-        , case model.disk of
-            Nothing ->
-                div [] [ text "Select a disk" ]
-
-            Just disk ->
-                dl []
-                    [ dt [] [ text "Path:" ]
-                    , dd [] [ text disk.path ]
-                    , dt [] [ text "Model:" ]
-                    , dd [] [ text disk.model ]
-                    , dt [] [ text "Serial:" ]
-                    , dd [] [ text disk.serial ]
-                    , dt [] [ text "Size:" ]
-                    , dd [] [ text disk.size ]
-                    ]
-        ]
-    ]
-
-
-mainLayout : Model -> List (Html Msg) -> Html Msg
+mainLayout : Model -> List (Material.Grid.Cell Msg) -> Html Msg
 mainLayout model children =
     Layout.render Mdl
         model.mdl
         [ Layout.fixedHeader
-        , Layout.waterfall True
         , Layout.selectedTab model.selectedTab
         , Layout.onSelectTab SelectTab
         ]
@@ -304,8 +252,231 @@ mainLayout model children =
               ]
             , []
             )
-        , main = children
+        , main =
+            [ grid []
+                [ cell [ Material.Grid.size All 8 ] [ grid [] children ]
+                , cell [ Material.Grid.size All 4 ]
+                    [ pre []
+                        [ text
+                            (configNix
+                                model
+                            )
+                        ]
+                    ]
+                ]
+            ]
         }
+
+
+languageView : Model -> List (Material.Grid.Cell Msg)
+languageView model =
+    [ cell [ fullWidth ] [ Options.styled p [ Typo.center, Typo.display2 ] [ text "Welcome to the\n        NixOS Installer." ] ]
+    , cell [ fullWidth ] [ Options.styled p [ Typo.display1 ] [ text "Configure Language" ] ]
+    , cell [ fullWidth ]
+        [ Options.styled p [ Typo.subhead ] [ text "Please select your language and continue to the next step." ]
+        , select [ onInput SetLanguage, id "language", name "language" ]
+            (List.map (languageItem model.language) languages)
+        ]
+    ]
+
+
+overlayView : Model -> List (Material.Grid.Cell Msg)
+overlayView model =
+    [ cell [] [ h4 [] [ text "Keyboard" ] ] ]
+
+
+locationView : Model -> List (Material.Grid.Cell Msg)
+locationView model =
+    [ cell []
+        [ label [ for "timezone" ] [ text "Timezone:" ]
+        , select [ onInput SetTimezone, id "timezone", name "timezone" ]
+            (List.map (timezoneItem model.timezone) model.timezones)
+        ]
+    ]
+
+
+usersView : Model -> List (Material.Grid.Cell Msg)
+usersView model =
+    [ cell [ fullWidth ] [ Options.styled p [ Typo.display1 ] [ text "Configure Users" ] ]
+    , formInput 10 model model.fullname "fullname" "What is your name?" SetFullname
+    , formInput 20 model model.username "username" "What name do you want to use to log in?" SetUsername
+    , passInput 30
+        model
+        "pwd"
+        model.userPass
+        SetUserPass
+        model.userPassAgain
+        SetUserPassAgain
+        "Choose a password to keep your account safe."
+        """
+          Enter the same password twice, so that it can be checked for typing
+          errors. A good password will contain a mixture of letters, numbers and
+          punctuation. Should be at least eight characters long, and should be
+          changed at regular intervals
+        """
+    , formInput 50 model model.hostname "hostname" "What is the name of this computer?" SetHostname
+    , formCaption
+        """
+          This name will be used if you make the computer visible to others on
+          the network.
+        """
+    , passInput 60
+        model
+        "admpwd"
+        model.userPass
+        SetRootPassword
+        model.userPassAgain
+        SetRootPasswordAgain
+        "Choose a password for the administrator account."
+        """
+        Enter the same password twice, so that it can be checked for
+        typing errors.
+        """
+    , cell [ fullWidth ]
+        [ button
+            [ onClick SaveConfig
+            ]
+            [ text "Save configuration" ]
+        , input
+            [ type_ "submit"
+            , Html.Attributes.value "Perform Installation"
+            ]
+            []
+        ]
+    ]
+
+
+fullWidth : Options.Style a
+fullWidth =
+    Material.Grid.size All 12
+
+
+passInput n model key value event valueAgain eventAgain label caption =
+    cell [ fullWidth ]
+        [ grid []
+            [ cell [ fullWidth ]
+                [ Options.styled p [ Typo.body2 ] [ text label ] ]
+            , cell [ Material.Grid.size All 2 ]
+                [ Textfield.render Mdl
+                    [ n ]
+                    model.mdl
+                    [ Textfield.label "Enter password"
+                    , Textfield.floatingLabel
+                    , Textfield.password
+                    , Textfield.value value
+                    , Options.onInput event
+                    , Options.id key
+                    ]
+                    []
+                ]
+            , cell [ Material.Grid.size All 2 ]
+                [ Textfield.render Mdl
+                    [ n + 1 ]
+                    model.mdl
+                    [ Textfield.label "Repeat password"
+                    , Textfield.floatingLabel
+                    , Textfield.password
+                    , Textfield.value valueAgain
+                    , Options.onInput eventAgain
+                    , Options.id (key ++ "again")
+                    ]
+                    []
+                ]
+            , formCaption caption
+            ]
+        ]
+
+
+formInput :
+    Int
+    -> Model
+    -> String
+    -> String
+    -> String
+    -> (String -> Msg)
+    -> Material.Grid.Cell Msg
+formInput n model value id labelName event =
+    cell [ fullWidth ]
+        [ grid []
+            [ cell []
+                [ Textfield.render Mdl
+                    [ n ]
+                    model.mdl
+                    [ Textfield.label labelName
+                    , Textfield.floatingLabel
+                    , Textfield.value value
+                    , Options.onInput event
+                    , Options.id id
+                    ]
+                    []
+                ]
+            ]
+        ]
+
+
+formCaption : String -> Material.Grid.Cell msg
+formCaption content =
+    cell [ fullWidth ]
+        [ Options.styled p [ Typo.body1 ] [ text content ] ]
+
+
+configNix model =
+    String.join "" [ """
+{config, pkgs, lib, ... }:
+with builtins;
+{
+  imports = [
+    ./hardware-configuration.nix
+  ];
+
+  boot.loader.grub = {
+    version = 2;
+    device = "/dev/vda";
+    extraConfig = "serial; terminal_output.serial";
+    fsIdentifier = "uuid";
+  };
+
+  time.timeZone = \"""", model.timezone.name, """";
+
+  i18n = {
+    defaultLocale = \"""", model.language.locale, """";
+  };
+
+  users.extraUsers.""", model.username, """ = {
+    isNormalUser = true;
+    home = "/home/""", model.username, """";
+    description = \"""", model.fullname, """";
+  };
+}
+  """ ]
+
+
+partitionView : Model -> List (Material.Grid.Cell Msg)
+partitionView model =
+    [ cell []
+        [ label [ for "disk" ] [ text "Install to:" ]
+        , select [ onInput SetDisk, id "disk", name "disk" ]
+            (List.append
+                [ option [] [] ]
+                (List.map diskItem model.disks)
+            )
+        , case model.disk of
+            Nothing ->
+                div [] [ text "Select a disk" ]
+
+            Just disk ->
+                dl []
+                    [ dt [] [ text "Path:" ]
+                    , dd [] [ text disk.path ]
+                    , dt [] [ text "Model:" ]
+                    , dd [] [ text disk.model ]
+                    , dt [] [ text "Serial:" ]
+                    , dd [] [ text disk.serial ]
+                    , dt [] [ text "Size:" ]
+                    , dd [] [ text disk.size ]
+                    ]
+        ]
+    ]
 
 
 findDisk : Model -> String -> Maybe Disk
@@ -383,7 +554,7 @@ saveEncoder model =
                         [ ( model.username
                           , Json.Encode.object
                                 [ ( "name", Json.Encode.string model.username )
-                                , ( "initialPassword", Json.Encode.string model.password )
+                                , ( "initialPassword", Json.Encode.string model.userPass )
                                 ]
                           )
                         ]
