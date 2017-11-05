@@ -5,6 +5,9 @@ SOURCE=$(readlink -f "${BASH_SOURCE[0]}")
 cd $(dirname "${SOURCE}")
 cd ..
 
-(cd ui; elm-make Main.elm --warn --yes)
+(
+  cd ui
+  elm-make Main.elm --warn --yes --output index.js
+)
 exec guile server.scm
 

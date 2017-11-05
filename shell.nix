@@ -19,8 +19,8 @@ stdenv.mkDerivation {
   ];
 
   TZDIR = "${tzdata}/share/zoneinfo";
-
   GUILE_LOAD_PATH="${guile-json}";
+  NIXOS_MANUAL = nixos-manual;
 
   shellHook = ''
     rm -rf elm-stuff

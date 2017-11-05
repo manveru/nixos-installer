@@ -15,8 +15,9 @@ import InstallerTranslation
 import Json.Decode exposing (..)
 import Json.Encode exposing (..)
 import List
+import Material
+import Material.Layout as Layout
 import Maybe
-import Style exposing (..)
 
 
 main : Program Never Model Msg
@@ -41,6 +42,8 @@ init =
       , password = ""
       , disks = []
       , timezones = []
+      , mdl = Material.model
+      , selectedTab = 0
       }
     , Cmd.batch [ getDisks, getTimezones ]
     )
@@ -57,6 +60,8 @@ type alias Model =
     , password : String
     , disks : List Disk
     , timezones : List Timezone
+    , mdl : Material.Model
+    , selectedTab : Int
     }
 
 
@@ -89,7 +94,8 @@ type Msg
     | SetUsername String
     | SetPassword String
     | SetLanguage String
-    | OpenStep Step
+    | SelectTab Int
+    | Mdl (Material.Msg Msg)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -149,8 +155,11 @@ update msg model =
             , Cmd.none
             )
 
-        OpenStep new ->
-            ( { model | step = new }, Cmd.none )
+        SelectTab n ->
+            ( { model | selectedTab = n }, Cmd.none )
+
+        Mdl _ ->
+            ( model, Cmd.none )
 
 
 type Step
@@ -165,17 +174,17 @@ type Step
 view : Model -> Html Msg
 view model =
     mainLayout model
-        (case model.step of
-            LanguageStep ->
+        (case model.selectedTab of
+            0 ->
                 languageStepView model
 
-            PartitionStep ->
+            1 ->
                 partitionStepView model
 
-            LocationStep ->
+            2 ->
                 locationStepView model
 
-            UsersStep ->
+            3 ->
                 usersStepView model
 
             default ->
@@ -190,7 +199,7 @@ usersStepView model =
 
 locationStepView : Model -> List (Html Msg)
 locationStepView model =
-    [ div [ formGroupStyle ]
+    [ div []
         [ label [ for "timezone" ] [ text "Timezone:" ]
         , select [ onInput SetTimezone, id "timezone", name "timezone" ]
             (List.map (timezoneItem model.timezone) model.timezones)
@@ -200,26 +209,24 @@ locationStepView model =
 
 overlayStepView : Model -> List (Html Msg)
 overlayStepView model =
-    [ div [ formGroupStyle, for "hostname" ]
+    [ div [ for "hostname" ]
         [ label [] [ text "Host name:" ]
         , input [ onInput SetHostname, id "hostname", name "hostname" ] []
         ]
-    , div [ formGroupStyle, for "username" ]
+    , div [ for "username" ]
         [ label [] [ text "Username:" ]
         , input [ onInput SetUsername, id "username", name "username" ] []
         ]
-    , div [ formGroupStyle, for "password" ]
+    , div [ for "password" ]
         [ label [] [ text "Password:" ]
         , input [ onInput SetPassword, id "password", type_ "password", name "password" ] []
         ]
     , button
-        [ successButtonStyle
-        , onClick SaveConfig
+        [ onClick SaveConfig
         ]
         [ text "Save configuration" ]
     , input
         [ type_ "submit"
-        , dangerButtonStyle
         , Html.Attributes.value "Perform Installation"
         ]
         []
@@ -228,7 +235,9 @@ overlayStepView model =
 
 languageStepView : Model -> List (Html Msg)
 languageStepView model =
-    [ select [ onInput SetLanguage, id "language", name "language" ]
+    [ h1 [] [ text "Welcome to the NixOS Installer." ]
+    , p [] [ text "Please select your language and continue to the next step." ]
+    , select [ onInput SetLanguage, id "language", name "language" ]
         (List.map (languageItem model.language) languages)
     ]
 
@@ -262,27 +271,39 @@ partitionStepView model =
     ]
 
 
-navLink : { a | step : Step } -> Step -> String -> Html Msg
-navLink model step label =
-    a [ navLinkStyle (model.step == step), onClick (OpenStep step) ] [ text label ]
-
-
 mainLayout : Model -> List (Html Msg) -> Html Msg
 mainLayout model children =
-    div [ layoutStyle ]
-        [ div [ navStyle ]
-            [ navLink model LanguageStep (t model.translation "language")
-            , navLink model LocationStep (t model.translation "location")
-            , navLink model KeyboardStep (t model.translation "keyboard")
-            , navLink model PartitionStep (t model.translation "partition")
-            , navLink model UsersStep (t model.translation "users")
-            , navLink model OverlayStep (t model.translation "overlay")
-            ]
-        , div [ formStyle ]
-            ([ h1 [] [ text "NixOS Installer" ] ]
-                ++ children
-            )
+    Layout.render Mdl
+        model.mdl
+        [ Layout.fixedHeader
+        , Layout.waterfall True
+        , Layout.selectedTab model.selectedTab
+        , Layout.onSelectTab SelectTab
         ]
+        { header =
+            [ Layout.row []
+                [ Layout.title [] [ text "NixOS Installer" ]
+                , Layout.spacer
+                , Layout.navigation []
+                    [ Layout.link
+                        [ Layout.href "/nixos/index.html" ]
+                        [ text "NixOS Manual" ]
+                    ]
+                ]
+            ]
+        , drawer = []
+        , tabs =
+            ( [ text (t model.translation "language")
+              , text (t model.translation "location")
+              , text (t model.translation "keyboard")
+              , text (t model.translation "partition")
+              , text (t model.translation "users")
+              , text (t model.translation "overlay")
+              ]
+            , []
+            )
+        , main = children
+        }
 
 
 findDisk : Model -> String -> Maybe Disk

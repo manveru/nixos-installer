@@ -19,10 +19,49 @@ layoutStyle =
         ]
 
 
+rowStyle =
+    style [ ( "display", "flex" ), ( "flex-flow", "row" ) ]
+
+
+columnStyle =
+    style [ ( "display", "flex" ), ( "flex-flow", "column" ) ]
+
+
+navStyle : Html.Attribute msg
+navStyle =
+    style
+        [ ( "display", "inline-block" )
+        , ( "flex", "1 6 20%" )
+        , ( "background", "rgba(81,170,255,0.8)" )
+        ]
+
+
+navLinkStyle : Bool -> Attribute msg
+navLinkStyle active =
+    style
+        [ ( "display", "block" )
+        , ( "line-height", "1em" )
+        , ( "border", "1px solid black" )
+        , ( "padding", "1em" )
+        , ( "font-size", "1.5em" )
+        , ( "background"
+          , if active then
+                "#5EFFF8"
+            else
+                "#51AAFF"
+          )
+        ]
+
+
+bottomNavStyle : Html.Attribute msg
+bottomNavStyle =
+    style [ ( "display", "block" ) ]
+
+
 formStyle : Html.Attribute msg
 formStyle =
     style
-        [ ( "width", "calc(80vw - 2em)" )
+        [ ( "flex", "3 1 60%" )
         , ( "padding", "1em" )
         , ( "background", "rgba(255,255,255,0.6)" )
         ]
@@ -50,31 +89,4 @@ dangerButtonStyle =
         , ( "height", "3em" )
         , ( "width", "25%" )
         , ( "margin", "3em" )
-        ]
-
-
-navStyle : Html.Attribute msg
-navStyle =
-    style
-        [ ( "display", "inline-block" )
-        , ( "width", "20vw" )
-        , ( "height", "100vh" )
-        , ( "background", "rgba(81,170,255,0.8)" )
-        ]
-
-
-navLinkStyle : Bool -> Attribute msg
-navLinkStyle active =
-    style
-        [ ( "display", "block" )
-        , ( "line-height", "1em" )
-        , ( "border", "1px solid black" )
-        , ( "padding", "1em" )
-        , ( "font-size", "1.5em" )
-        , ( "background"
-          , if active then
-                "#5EFFF8"
-            else
-                "#51AAFF"
-          )
         ]

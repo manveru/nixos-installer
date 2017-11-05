@@ -20,7 +20,7 @@ stdenv.mkDerivation {
     (
       cd $out/tmp
       ${elmStuff}
-      ${elm-make}/bin/elm-make --yes --output $out/index.html $src/Main.elm
+      ${elm-make}/bin/elm-make --yes --output $out/index.js $src/Main.elm
     )
     rm -rf $out/tmp
     cp ${./logo.svg} $out/logo.svg

@@ -4,10 +4,12 @@
              (sxml simple)
              (json)
              (ice-9 match)
+             (ice-9 regex)
+             (ice-9 hash-table)
+             (srfi srfi-1)
              (rnrs bytevectors)
              (web uri))
 
-(load "lib/template.scm")
 (load "lib/disks.scm")
 (load "lib/tz.scm")
 
@@ -17,6 +19,32 @@
   (or (getenv "INSTALLER_SAVE_FILE") "installer.json"))
 (define installer-conf-file
   (or (getenv "INSTALLER_CONF_FILE") "configuration.nix"))
+(define nixos-manual
+  (getenv "NIXOS_MANUAL"))
+
+(define %mime-types
+  (alist->hash-table
+    '(("css" . text/css)
+      ("gif" . image/gif)
+      ("html" . text/html)
+      ("svg" . image/svg+xml)
+      ("js" . application/javascript)
+      ("json" . text/javascript))))
+
+(define %file-ext-regexp
+  (make-regexp "(\\.(.*)|[~%])$"))
+
+(define (file-extension file-name)
+  "Return the file extension for FILE-NAME, or #f if one is not found."
+  (and=> (regexp-exec %file-ext-regexp file-name)
+         (lambda (match)
+           (or (match:substring match 2)
+               (match:substring match 1)))))
+
+(define (mime-type file-name)
+  "Guess the MIME type for FILE-NAME based upon its file extension."
+  (or (hash-ref %mime-types (file-extension file-name))
+      'text/plain))
 
 (define (request-path-components request)
   (split-and-decode-uri-path (uri-path (request-uri request))))
@@ -28,15 +56,6 @@
           (lambda (port)
             (display data port))))
 
-(define* (send-xml msg #:key (code 200))
-  (define doctype "<!DOCTYPE html>\n")
-  (values (build-response #:code code
-                          #:headers `((access-control-allow-origin . "*")
-                                      (content-type . (text/html))))
-          (lambda (port)
-            (begin (display doctype port)
-                   (sxml->xml msg port)))))
-
 (define* (send-json data #:key (code 200))
   (values (build-response #:code code
                           #:headers `((access-control-allow-origin . "*")
@@ -44,18 +63,24 @@
           (lambda (port)
             (scm->json data port))))
 
-(define* (send-html data #:key (code 200))
-  (values (build-response #:code code
-                          #:headers `((access-control-allow-origin . "*")
-                                      (content-type . (text/html))))
-          (lambda (port)
-            (display data port))))
 
-(define* (send-svg data #:key (code 200))
-  (values (build-response #:code code
-                          #:headers `((content-type . (image/svg+xml))))
-          (lambda (port)
-            (display data port))))
+(define* (send-file path #:key (code 200) (mime (mime-type path)))
+         (if (file-exists? path)
+           (values (build-response
+                     #:code code
+                     #:headers `((access-control-allow-origin . "*")
+                                 (content-type mime)))
+                   (lambda (port)
+                     (display (read-file path) port)))
+           (values (build-response #:code 404) "resource not found")))
+
+
+(define* (serve-manual request)
+  (let ((path (string-join
+                (cons nixos-manual (delete ".." (request-path-components request)))
+                file-name-separator-string)))
+    (display path) (newline)
+    (send-file path)))
 
 (define disks (detect-disks))
 
@@ -77,9 +102,17 @@
   (cond ((eq? (request-method request) 'GET)
          (match (request-path-components request)
            (()
-            (send-html (read-file  "ui/index.html")))
+            (send-file "ui/index.html"))
+           (("nixos" _ ...)
+            (serve-manual request))
+           (("index.js")
+            (send-file "ui/index.js"))
+           (("dialog-polyfill.js")
+            (send-file "ui/assets/dialog-polyfill.js"))
+           (("dialog-polyfill.css")
+            (send-file "ui/assets/dialog-polyfill.css"))
            (("logo.svg")
-            (send-svg (read-file "ui/logo.svg")))
+            (send-file "ui/logo.svg"))
            (("timezones")
             (send-json (timezones->json detected-timezones)))
            (("disks")
