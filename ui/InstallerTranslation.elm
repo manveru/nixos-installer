@@ -30,22 +30,22 @@ type alias Language =
 
 en_CA : Language
 en_CA =
-    { name = "English (Canada)", locale = "en_CA.UTF-8", translation = english, timezone = "America/Montevideo" }
+    { name = "English (Canada)", locale = "en_CA.UTF-8", translation = english, timezone = "America/Toronto" }
 
 
 en_GB : Language
 en_GB =
-    { name = "English (Britain)", locale = "en_GB.UTF-8", translation = english, timezone = "America/Montevideo" }
+    { name = "English (Britain)", locale = "en_GB.UTF-8", translation = english, timezone = "Europe/London" }
 
 
 en_US : Language
 en_US =
-    { name = "English (USA)", locale = "en_US.UTF-8", translation = english, timezone = "America/Montevideo" }
+    { name = "English (USA)", locale = "en_US.UTF-8", translation = english, timezone = "America/New_York" }
 
 
 cs_CZ : Language
 cs_CZ =
-    { name = "Český", locale = "cs_CZ.UTF-8", translation = english, timezone = "America/Montevideo" }
+    { name = "Český", locale = "cs_CZ.UTF-8", translation = english, timezone = "Europe/Prague" }
 
 
 de_DE : Language
@@ -60,32 +60,32 @@ de_AT =
 
 el_GR : Language
 el_GR =
-    { name = "Ελληνικά", locale = "el_GR.UTF-8", translation = english, timezone = "America/Montevideo" }
+    { name = "Ελληνικά", locale = "el_GR.UTF-8", translation = english, timezone = "Europe/Athens" }
 
 
 es_ES : Language
 es_ES =
-    { name = "Español", locale = "es_ES.UTF-8", translation = english, timezone = "America/Montevideo" }
+    { name = "Español", locale = "es_ES.UTF-8", translation = english, timezone = "Europe/Madrid" }
 
 
 fr_FR : Language
 fr_FR =
-    { name = "Français", locale = "fr_FR.UTF-8", translation = english, timezone = "America/Montevideo" }
+    { name = "Français", locale = "fr_FR.UTF-8", translation = english, timezone = "Europe/Paris" }
 
 
 hr_HR : Language
 hr_HR =
-    { name = "Hrvatski", locale = "hr_HR.UTF-8", translation = english, timezone = "America/Montevideo" }
+    { name = "Hrvatski", locale = "hr_HR.UTF-8", translation = english, timezone = "Europe/Zagreb" }
 
 
 hu_HU : Language
 hu_HU =
-    { name = "Magyar", locale = "hu_HU.UTF-8", translation = english, timezone = "America/Montevideo" }
+    { name = "Magyar", locale = "hu_HU.UTF-8", translation = english, timezone = "Europe/Budapest" }
 
 
 it_IT : Language
 it_IT =
-    { name = "Italiano", locale = "it_IT.UTF-8", translation = english, timezone = "America/Montevideo" }
+    { name = "Italiano", locale = "it_IT.UTF-8", translation = english, timezone = "Europe/Rome" }
 
 
 ja_JP : Language
@@ -95,32 +95,41 @@ ja_JP =
 
 ko_KR : Language
 ko_KR =
-    { name = "한국어", locale = "ko_KR.UTF-8", translation = english, timezone = "America/Montevideo" }
+    { name = "한국어", locale = "ko_KR.UTF-8", translation = english, timezone = "Asia/Seoul" }
 
 
 pl_PL : Language
 pl_PL =
-    { name = "Polski", locale = "pl_PL.UTF-8", translation = english, timezone = "America/Montevideo" }
+    { name = "Polski", locale = "pl_PL.UTF-8", translation = english, timezone = "Europe/Warsaw" }
 
 
 pt_BR : Language
 pt_BR =
-    { name = "Português (Brasil)", locale = "pt_BR.UTF-8", translation = english, timezone = "America/Montevideo" }
+    { name = "Português (Brasil)"
+    , locale = "pt_BR.UTF-8"
+    , translation =
+        english
+    , timezone = "America/Sao_Paulo"
+    }
 
 
 ru_RU : Language
 ru_RU =
-    { name = "Русский", locale = "ru_RU.UTF-8", translation = english, timezone = "America/Montevideo" }
+    { name = "Русский", locale = "ru_RU.UTF-8", translation = english, timezone = "Europe/Moscow" }
 
 
 sr_RS : Language
 sr_RS =
-    { name = "Српски (Ћирилица)", locale = "sr_RS.UTF-8", translation = english, timezone = "America/Montevideo" }
+    { name = "Српски (Ћирилица)"
+    , locale = "sr_RS.UTF-8"
+    , translation = english
+    , timezone = "Europe/Belgrade"
+    }
 
 
 zh_CN : Language
 zh_CN =
-    { name = "简体中文", locale = "zh_CN.UTF-8", translation = english, timezone = "America/Montevideo" }
+    { name = "简体中文", locale = "zh_CN.UTF-8", translation = english, timezone = "Asia/Shanghai" }
 
 
 languages : List Language

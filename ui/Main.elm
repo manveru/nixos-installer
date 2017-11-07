@@ -1,14 +1,12 @@
 module Main exposing (..)
 
-import Html exposing (..)
-import Navigation
-import Dict
 import Array exposing (Array)
+import Dict
+import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Http
 import I18Next exposing (Translations, t)
-import KeyboardLayouts exposing (keyboardLayoutsAndVariants)
 import InstallerTranslation
     exposing
         ( Language
@@ -18,7 +16,7 @@ import InstallerTranslation
         )
 import Json.Decode exposing (..)
 import Json.Encode exposing (..)
-import Mustache
+import KeyboardLayouts exposing (keyboardLayoutsAndVariants)
 import List
 import Material
 import Material.Grid exposing (Device(..), cell, grid, size)
@@ -27,6 +25,9 @@ import Material.Options as Options
 import Material.Textfield as Textfield
 import Material.Typography as Typo
 import Maybe
+import Mustache
+import Navigation
+import Timezones
 
 
 main : Program Never Model Msg
@@ -35,7 +36,7 @@ main =
         { init = init
         , view = view
         , update = update
-        , subscriptions = (\_ -> Sub.none)
+        , subscriptions = \_ -> Sub.none
         }
 
 
@@ -58,7 +59,7 @@ init location =
       , timezones = []
       , mdl = Material.model
       , focus = False
-      , selectedTab = 0
+      , selectedTab = 3
       }
     , Cmd.batch [ getDisks, getTimezones ]
     )
@@ -189,13 +190,13 @@ update msg model =
                 found =
                     findLanguage languageName
             in
-                ( { model
-                    | language = found
-                    , translation = found.translation
-                    , timezone = findTimezone model.timezones found.timezone
-                  }
-                , Cmd.none
-                )
+            ( { model
+                | language = found
+                , translation = found.translation
+                , timezone = findTimezone model.timezones found.timezone
+              }
+            , Cmd.none
+            )
 
         SetKeyboard keyboard ->
             ( { model | keyboard = findKeyboard keyboard }, Cmd.none )
@@ -226,7 +227,7 @@ view model =
             Maybe.withDefault ( "language", languageView )
                 (Array.get model.selectedTab tabs)
     in
-        mainLayout model ((Tuple.second tab) model)
+    mainLayout model (Tuple.second tab model)
 
 
 mainLayout : Model -> List (Material.Grid.Cell Msg) -> Html Msg
@@ -251,11 +252,10 @@ mainLayout model children =
         , drawer = []
         , tabs =
             ( Array.toList
-                ((Array.map
+                (Array.map
                     (\tab ->
                         text (t model.translation (Tuple.first tab))
                     )
-                 )
                     tabs
                 )
             , []
@@ -278,7 +278,8 @@ mainLayout model children =
 
 languageView : Model -> List (Material.Grid.Cell Msg)
 languageView model =
-    [ cell [ fullWidth ] [ Options.styled p [ Typo.display1 ] [ text "Configure Language" ] ]
+    [ cell [ fullWidth ]
+        [ Options.styled p [ Typo.display1 ] [ text "Configure Language" ] ]
     , cell [ fullWidth ]
         [ Options.styled p [ Typo.subhead ] [ text "Please select your language and continue to the next step." ]
         , select [ onInput SetLanguage, id "language", name "language" ]
@@ -290,14 +291,21 @@ languageView model =
 overlayView : Model -> List (Material.Grid.Cell Msg)
 overlayView model =
     [ cell [ fullWidth ]
-        [ Options.styled p [ Typo.display1 ] [ text "Select Overlay" ] ]
-    , cell [] []
+        [ Options.styled p [ Typo.display1 ] [ text "Choose Preset Overlays" ] ]
+    , cell [ fullWidth ]
+        [ select []
+            [ option [] [ text "Desktop" ]
+            , option [] [ text "Server" ]
+            , option [] [ text "Gaming" ]
+            ]
+        ]
     ]
 
 
 keyboardView : Model -> List (Material.Grid.Cell Msg)
 keyboardView model =
-    [ cell [ fullWidth ] [ Options.styled p [ Typo.display1 ] [ text "Configure Keyboard" ] ]
+    [ cell [ fullWidth ]
+        [ Options.styled p [ Typo.display1 ] [ text "Configure Keyboard" ] ]
     , cell [ fullWidth ]
         [ Options.styled p [ Typo.subhead ] [ text "Pick a keyboard layout." ]
         , select [ onInput SetKeyboard, id "language", name "language" ]
@@ -307,6 +315,16 @@ keyboardView model =
                 )
             )
         ]
+    , cell [ fullWidth ]
+        [ Textfield.render Mdl
+            [ 99 ]
+            model.mdl
+            [ Textfield.label "Try out your keyboard configuration."
+            , Textfield.floatingLabel
+            , Textfield.textarea
+            ]
+            []
+        ]
     ]
 
 
@@ -314,8 +332,14 @@ locationView : Model -> List (Material.Grid.Cell Msg)
 locationView model =
     [ cell [ fullWidth ]
         [ Options.styled p [ Typo.display1 ] [ text "Configure Location" ] ]
-    , cell []
-        [ label [ for "timezone" ] [ text "Timezone:" ]
+    , cell [ fullWidth ]
+        [ Options.styled p [ Typo.subhead ] [ text """
+        Select your location, so that the system can use appropriate display
+        conventions for your country and set the clock to the correct local
+        time.
+        """ ]
+        , Timezones.zones model.timezone
+        , label [ for "timezone" ] [ text "Timezone:" ]
         , select [ onInput SetTimezone, id "timezone", name "timezone" ]
             (List.map (timezoneItem model.timezone) model.timezones)
         ]
@@ -324,7 +348,8 @@ locationView model =
 
 usersView : Model -> List (Material.Grid.Cell Msg)
 usersView model =
-    [ cell [ fullWidth ] [ Options.styled p [ Typo.display1 ] [ text "Configure Users" ] ]
+    [ cell [ fullWidth ]
+        [ Options.styled p [ Typo.display1 ] [ text "Configure Users" ] ]
     , formInput 10 model model.fullname "fullname" "What is your name?" SetFullname
     , formInput 20 model model.username "username" "What name do you want to use to log in?" SetUsername
     , passInput 30
@@ -461,39 +486,35 @@ formCaption content =
 obfuscatePass : String -> String -> String
 obfuscatePass pass again =
     if pass == again then
-        String.pad ((String.length pass) * 2) '*' "*"
+        String.pad (String.length pass * 2) '*' "*"
     else
         ""
 
 
-configNix :
-    { c
-        | fullname : String
-        , language : { a | locale : String }
-        , timezone : { b | name : String }
-        , userPass : String
-        , userPassAgain : String
-        , username : String
-        , keyboard : ( String, String, String )
-    }
-    -> String
+configNix : Model -> String
 configNix model =
     let
         ( kblayout, kbvariant, kbname ) =
             model.keyboard
+
+        disk =
+            Maybe.withDefault nullDisk model.disk
     in
-        Mustache.render
-            [ Mustache.Variable "time.timezone" model.timezone.name
-            , Mustache.Variable "i18n.defaultLocale" model.language.locale
-            , Mustache.Variable "i18n.consoleKeyMap" kblayout
-            , Mustache.Variable "kbLayout" kblayout
-            , Mustache.Variable "kbVariant" kbvariant
-            , Mustache.Variable "kbname" kbname
-            , Mustache.Variable "username" model.username
-            , Mustache.Variable "fullname" model.fullname
-            , Mustache.Variable "userPass" (obfuscatePass model.userPass model.userPassAgain)
-            ]
-            """
+    Mustache.render
+        [ Mustache.Variable "time.timezone" model.timezone.name
+        , Mustache.Variable "i18n.defaultLocale" model.language.locale
+        , Mustache.Variable "i18n.consoleKeyMap" kblayout
+        , Mustache.Variable "kbLayout" kblayout
+        , Mustache.Variable "kbVariant" kbvariant
+        , Mustache.Variable "kbname" kbname
+        , Mustache.Variable "username" model.username
+        , Mustache.Variable "fullname" model.fullname
+        , Mustache.Variable "userPass" (obfuscatePass model.userPass model.userPassAgain)
+        , Mustache.Variable "disk.size" disk.size
+        , Mustache.Variable "disk.model" disk.model
+        , Mustache.Variable "disk.path" disk.path
+        ]
+        """
 {config, pkgs, lib, ... }:
 with builtins;
 {
@@ -503,7 +524,7 @@ with builtins;
 
   boot.loader.grub = {
     version = 2;
-    device = "/dev/vda";
+    device = "/dev/{{disk.path}}";
     extraConfig = "serial; terminal_output.serial";
     fsIdentifier = "uuid";
   };
@@ -536,7 +557,8 @@ with builtins;
 
 partitionView : Model -> List (Material.Grid.Cell Msg)
 partitionView model =
-    [ cell [ fullWidth ] [ Options.styled p [ Typo.display1 ] [ text "Install Location" ] ]
+    [ cell [ fullWidth ]
+        [ Options.styled p [ Typo.display1 ] [ text "Install Location" ] ]
     , cell [ fullWidth ]
         [ Options.styled p [ Typo.subhead ] [ text "Select a disk to format and install NixOS on." ]
         , select [ onInput SetDisk, id "disk", name "disk" ]
@@ -674,7 +696,7 @@ postSaveConfig model =
         body =
             model |> saveEncoder |> Http.jsonBody
     in
-        Http.post "http://localhost:8081/save" body saveConfigDecoder
+    Http.post "http://localhost:8081/save" body saveConfigDecoder
 
 
 saveConfig : Model -> Cmd Msg
@@ -717,8 +739,8 @@ keyboardLayoutItem current key value =
         ( layout, variant, name ) =
             value
     in
-        option
-            [ Html.Attributes.value key
-            , selected (currentLayout == layout)
-            ]
-            [ text name ]
+    option
+        [ Html.Attributes.value key
+        , selected (currentLayout == layout)
+        ]
+        [ text name ]

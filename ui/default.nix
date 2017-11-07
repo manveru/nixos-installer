@@ -7,6 +7,7 @@ let
   elmStuff = makeElmStuff (import ./package.nix);
   ignore = map (path: toString path ) [
     ./elm-stuff
+    ./Makefile
   ];
 in
 stdenv.mkDerivation {
@@ -18,10 +19,12 @@ stdenv.mkDerivation {
 
   installPhase = ''
     mkdir -p $out/elm-stuff
-    ln -s ${elmStuff}/elm-stuff/packages $out/elm-stuff/packages
-    ln -s ${elmStuff}/elm-stuff/exact-dependencies.json $out/elm-stuff
-    ${elm-make}/bin/elm-make --yes --output $out/index.js $src/Main.elm
-    cp -R $src/assets $out
-    ls -R $out
+    cd $out
+    ln -s ${elmStuff}/elm-package.json elm-package.json
+    ln -s ${elmStuff}/elm-stuff/packages elm-stuff/packages
+    ln -s ${elmStuff}/elm-stuff/exact-dependencies.json elm-stuff
+    cp $src/*.elm $out
+    ${elm-make}/bin/elm-make --yes --output index.js $src/Main.elm
+    cp -R $src/assets .
   '';
 }

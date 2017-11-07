@@ -3,6 +3,10 @@
     version = "8.1.0";
     sha256 = "15df0fy45s9xkx9v6432b2wxkdf6imgr4mvrqmjl3l7yh8046zwc";
   };
+  "elm-lang/navigation" = {
+    version = "2.1.0";
+    sha256 = "0xyamkcw3misjfyc523g0bh97lffrikaxk2hklwmla9i7j39ivf3";
+  };
   "elm-lang/virtual-dom" = {
     version = "2.0.4";
     sha256 = "13kc3jim6js827h91m6wx6n16qb3b6p6ms6789ks106zpwmhfwxv";
@@ -26,6 +30,10 @@
   "elm-lang/http" = {
     version = "1.0.0";
     sha256 = "1fh9k278q4i2y447wkk8jd4n12px1nsmycd0fql8k0i3ypcibm8h";
+  };
+  "elm-lang/svg" = {
+    version = "2.0.0";
+    sha256 = "1c7p967n1yhynravqwgh80vprwz7r2r1n0x3icn5wzk9iaqs069l";
   };
   "debois/elm-dom" = {
     version = "1.2.3";

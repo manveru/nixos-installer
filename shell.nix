@@ -1,4 +1,7 @@
-with import <nixpkgs> {overlays = [ (import ./overlay.nix) ]; };
+with import (fetchTarball {
+  url = https://github.com/NixOS/nixpkgs/archive/4db6d3589175042c0a4c17691fa5cf855053d7fa.tar.gz;
+  sha256 = "0q07hcml3lwk4wgs1jr6i14z05bx32rw12p400nh99zkyjqdws07";
+}) {overlays = [ (import ./overlay.nix) ]; };
 stdenv.mkDerivation {
   name = "nixos-installer";
 
