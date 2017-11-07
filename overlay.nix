@@ -1,6 +1,9 @@
 self: super:
 let
-  makeElmStuff = super.callPackage ./ui/elm2nix.nix {};
+  makeElmStuff = super.callPackage ./ui/elm2nix.nix {
+    elm-make = self.elmPackages.elm-make;
+    elmPackageJson = ./ui/elm-package.json;
+  };
 in {
   guile-json = super.callPackage ./guile-json.nix {};
   guile-fibers = super.callPackage ./guile-fibers.nix {};

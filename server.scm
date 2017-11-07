@@ -112,7 +112,7 @@
            (("dialog-polyfill.css")
             (send-file "ui/assets/dialog-polyfill.css"))
            (("logo.svg")
-            (send-file "ui/logo.svg"))
+            (send-file "ui/assets/logo.svg"))
            (("timezones")
             (send-json (timezones->json detected-timezones)))
            (("disks")
