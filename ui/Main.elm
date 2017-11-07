@@ -262,8 +262,8 @@ mainLayout model children =
             )
         , main =
             [ grid []
-                [ cell [ Material.Grid.size All 8 ] [ grid [] children ]
-                , cell [ Material.Grid.size All 4 ]
+                [ cell [ Material.Grid.size All 7 ] [ grid [] children ]
+                , cell [ Material.Grid.size All 5 ]
                     [ pre []
                         [ text
                             (configNix
@@ -394,7 +394,7 @@ passInput n model key value event valueAgain eventAgain label caption =
         [ grid []
             [ cell [ fullWidth ]
                 [ Options.styled p [ Typo.body2 ] [ text label ] ]
-            , cell [ Material.Grid.size All 2 ]
+            , cell [ Material.Grid.size All 6 ]
                 [ Textfield.render Mdl
                     [ n ]
                     model.mdl
@@ -407,7 +407,7 @@ passInput n model key value event valueAgain eventAgain label caption =
                     ]
                     []
                 ]
-            , cell [ Material.Grid.size All 2 ]
+            , cell [ Material.Grid.size All 6 ]
                 [ Textfield.render Mdl
                     [ n + 1 ]
                     model.mdl
@@ -436,7 +436,7 @@ formInput :
 formInput n model value id labelName event =
     cell [ fullWidth ]
         [ grid []
-            [ cell []
+            [ cell [ Material.Grid.size All 6 ]
                 [ Textfield.render Mdl
                     [ n ]
                     model.mdl
