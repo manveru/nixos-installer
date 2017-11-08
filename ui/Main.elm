@@ -6,17 +6,23 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Http
-import I18Next exposing (Translations, t)
 import InstallerTranslation
     exposing
         ( Language
         , defaultLanguage
         , defaultTranslation
         , languages
+        , t
         )
 import Json.Decode exposing (..)
 import Json.Encode exposing (..)
-import KeyboardLayouts exposing (keyboardLayoutsAndVariants)
+import KeyboardLayouts
+    exposing
+        ( Key
+        , KeyboardLayout
+        , defaultKeyboardLayout
+        , keyboardLayoutsAndVariants
+        )
 import List
 import Material
 import Material.Grid exposing (Device(..), cell, grid, size)
@@ -27,7 +33,9 @@ import Material.Typography as Typo
 import Maybe
 import Mustache
 import Navigation
+import T
 import Timezones
+import Translator exposing (Translator)
 
 
 main : Program Never Model Msg
@@ -42,10 +50,23 @@ main =
 
 init : Navigation.Location -> ( Model, Cmd Msg )
 init location =
+    let
+        fallBackTranslator =
+            Translator.makeDefaultTranslator T.defaultTranslation
+
+        translator =
+            Translator.updateTranslations defaultLanguage.translation fallBackTranslator
+
+        keyboard =
+            ( "us"
+            , Maybe.withDefault defaultKeyboardLayout
+                (Dict.get "us" keyboardLayoutsAndVariants)
+            )
+    in
     ( { history = [ location ]
       , language = defaultLanguage
-      , keyboard = ( "", "", "" )
-      , translation = defaultTranslation
+      , keyboard = keyboard
+      , translator = translator
       , disk = Nothing
       , timezone = nullTimezone
       , username = ""
@@ -68,8 +89,8 @@ init location =
 type alias Model =
     { history : List Navigation.Location
     , language : Language
-    , keyboard : ( String, String, String )
-    , translation : Translations
+    , translator : Translator
+    , keyboard : ( Key, KeyboardLayout )
     , disk : Maybe Disk
     , timezone : Timezone
     , username : String
@@ -192,7 +213,7 @@ update msg model =
             in
             ( { model
                 | language = found
-                , translation = found.translation
+                , translator = Translator.updateTranslations found.translation model.translator
                 , timezone = findTimezone model.timezones found.timezone
               }
             , Cmd.none
@@ -208,15 +229,15 @@ update msg model =
             Material.update Mdl msg_ model
 
 
-tabs : Array ( String, Model -> List (Material.Grid.Cell Msg) )
+tabs : Array ( T.T, Model -> List (Material.Grid.Cell Msg) )
 tabs =
     Array.fromList
-        [ ( "language", languageView )
-        , ( "location", locationView )
-        , ( "keyboard", keyboardView )
-        , ( "partition", partitionView )
-        , ( "users", usersView )
-        , ( "overlay", overlayView )
+        [ T.Language => languageView
+        , T.Location => locationView
+        , T.Keyboard => keyboardView
+        , T.Partition => partitionView
+        , T.Users => usersView
+        , T.Overlay => overlayView
         ]
 
 
@@ -224,7 +245,7 @@ view : Model -> Html Msg
 view model =
     let
         tab =
-            Maybe.withDefault ( "language", languageView )
+            Maybe.withDefault ( T.Language, languageView )
                 (Array.get model.selectedTab tabs)
     in
     mainLayout model (Tuple.second tab model)
@@ -252,25 +273,14 @@ mainLayout model children =
         , drawer = []
         , tabs =
             ( Array.toList
-                (Array.map
-                    (\tab ->
-                        text (t model.translation (Tuple.first tab))
-                    )
-                    tabs
-                )
+                (Array.map (\tab -> t model (Tuple.first tab)) tabs)
             , []
             )
         , main =
             [ grid []
                 [ cell [ Material.Grid.size All 7 ] [ grid [] children ]
                 , cell [ Material.Grid.size All 5 ]
-                    [ pre []
-                        [ text
-                            (configNix
-                                model
-                            )
-                        ]
-                    ]
+                    [ pre [] [ text (configNix model) ] ]
                 ]
             ]
         }
@@ -494,8 +504,8 @@ obfuscatePass pass again =
 configNix : Model -> String
 configNix model =
     let
-        ( kblayout, kbvariant, kbname ) =
-            model.keyboard
+        keyboard =
+            Tuple.second model.keyboard
 
         disk =
             Maybe.withDefault nullDisk model.disk
@@ -503,10 +513,10 @@ configNix model =
     Mustache.render
         [ Mustache.Variable "time.timezone" model.timezone.name
         , Mustache.Variable "i18n.defaultLocale" model.language.locale
-        , Mustache.Variable "i18n.consoleKeyMap" kblayout
-        , Mustache.Variable "kbLayout" kblayout
-        , Mustache.Variable "kbVariant" kbvariant
-        , Mustache.Variable "kbname" kbname
+        , Mustache.Variable "i18n.consoleKeyMap" keyboard.layout
+        , Mustache.Variable "kbLayout" keyboard.layout
+        , Mustache.Variable "kbVariant" keyboard.variant
+        , Mustache.Variable "kbname" keyboard.name
         , Mustache.Variable "username" model.username
         , Mustache.Variable "fullname" model.fullname
         , Mustache.Variable "userPass" (obfuscatePass model.userPass model.userPassAgain)
@@ -515,9 +525,7 @@ configNix model =
         , Mustache.Variable "disk.path" disk.path
         ]
         """
-{config, pkgs, lib, ... }:
-with builtins;
-{
+{config, pkgs, lib, ... }: {
   imports = [
     ./hardware-configuration.nix
   ];
@@ -600,12 +608,13 @@ findLanguage name =
 
 findKeyboard :
     String
-    -> ( KeyboardLayouts.Layout, KeyboardLayouts.Variant, KeyboardLayouts.Name )
+    -> ( String, KeyboardLayout )
 findKeyboard keyboardName =
-    Maybe.withDefault ( "en", "", "English" )
-        (Dict.get keyboardName
-            keyboardLayoutsAndVariants
-        )
+    let
+        found =
+            Maybe.withDefault defaultKeyboardLayout (Dict.get keyboardName keyboardLayoutsAndVariants)
+    in
+    ( keyboardName, found )
 
 
 findTimezone : List Timezone -> String -> Timezone
@@ -730,17 +739,19 @@ timezoneItem current timezone =
         [ text timezone.name ]
 
 
-keyboardLayoutItem : ( String, String, String ) -> String -> ( String, String, String ) -> Html msg
-keyboardLayoutItem current key value =
-    let
-        ( currentLayout, _, _ ) =
-            current
-
-        ( layout, variant, name ) =
-            value
-    in
+keyboardLayoutItem :
+    ( Key, KeyboardLayout )
+    -> String
+    -> KeyboardLayout
+    -> Html msg
+keyboardLayoutItem current key given =
     option
         [ Html.Attributes.value key
-        , selected (currentLayout == layout)
+        , selected (Tuple.second current == given)
         ]
-        [ text name ]
+        [ text given.name ]
+
+
+(=>) : a -> b -> ( a, b )
+(=>) =
+    (,)
