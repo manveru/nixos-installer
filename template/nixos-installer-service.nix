@@ -12,8 +12,8 @@ in
     };
     serviceConfig =
       { ExecStart = "${installer}/bin/start-installer";
-        WorkingDirectory = "/tmp";
-        Restart = "always";
+        WorkingDirectory = "${installer}";
+        # Restart = "always";
       };
   };
 }

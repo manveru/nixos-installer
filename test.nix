@@ -11,21 +11,16 @@ makeTest {
 
   nodes = {
     box = {config, pkgs, ...}: {
+      imports = [
+        ./template/nixos-installer-service.nix
+      ];
+
       time.timeZone = "Europe/Berlin";
       i18n.defaultLocale = "en_US.UTF-8";
 
       environment.systemPackages = with pkgs; [
         htop iotop tmux strace file gzip
       ];
-
-      systemd.services."nixos-installer" = {
-        wantedBy = [ "multi-user.target" ];
-        serviceConfig =
-          { ExecStart = "${installer}/bin/start-installer";
-            WorkingDirectory = installer;
-            Restart = "always";
-          };
-      };
 
       nix = {
         package = pkgs.nixStable;
@@ -45,11 +40,14 @@ makeTest {
     $box->waitForOpenPort(8081);
 
     subtest "Shows up", sub {
-      $box->succeed("curl -f http://localhost:8081");
-      $box->succeed("nixos-install");
+      $box->sleep(2);
+      $box->execute("curl -v http://localhost:8081 >&2");
+      $box->succeed("systemctl status nixos-installer >&2");
+      $box->succeed("journalctl -xe -u nixos-installer >&2");
+      $box->succeed("curl -vf http://localhost:8081 >&2");
     };
 
-    $box->stopJob("installer-service");
+    $box->stopJob("nixos-installer");
     $box->shutdown
   '';
 }

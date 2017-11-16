@@ -34,13 +34,13 @@ let
 
       # Make sure that we get a login prompt etc.
       $machine->succeed("echo hello");
-      $machine->waitForUnit("nixos-installer");
-      $machine->waitForUnit("nixos-manual");
 
       # Wait for hard disks to appear in /dev
       $machine->succeed("udevadm settle");
 
+      $machine->waitForUnit("nixos-installer");
       $machine->waitForOpenPort(8081);
+      $machine->sleep(10);
       $machine->succeed("curl -f http://localhost:8081");
 
       subtest "Configures the system", sub {

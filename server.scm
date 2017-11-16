@@ -82,6 +82,13 @@
     (display path) (newline)
     (send-file path)))
 
+(define* (serve-assets request)
+  (let ((path (string-join
+                (cons "ui" (delete ".." (request-path-components request)))
+                file-name-separator-string)))
+    (display path) (newline)
+    (send-file path)))
+
 (define disks (detect-disks))
 
 (define detected-disks (detect-disks))
@@ -105,14 +112,10 @@
             (send-file "ui/index.html"))
            (("nixos" _ ...)
             (serve-manual request))
+           (("assets" _ ...)
+            (serve-assets request))
            (("index.js")
             (send-file "ui/index.js"))
-           (("dialog-polyfill.js")
-            (send-file "ui/assets/dialog-polyfill.js"))
-           (("dialog-polyfill.css")
-            (send-file "ui/assets/dialog-polyfill.css"))
-           (("logo.svg")
-            (send-file "ui/assets/logo.svg"))
            (("timezones")
             (send-json (timezones->json detected-timezones)))
            (("disks")

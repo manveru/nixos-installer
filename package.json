@@ -1,0 +1,12 @@
+{
+  "name": "nixos-installer",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:manveru/nixos-installer",
+  "author": "Michael Fellinger <michael.fellinger@xing.com>",
+  "license": "MIT",
+  "dependencies": {
+    "elm-oracle": "ElmCast/elm-oracle",
+    "elm-test": "rtfeldman/node-test-runner"
+  }
+}

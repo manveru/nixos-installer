@@ -39,6 +39,6 @@ stdenv.mkDerivation {
     EOF
     ${linkedPackages}
     cp ${elmPackageJson} elm-package.json
-    ${elm-make}/bin/elm-make
+    ${elm-make}/bin/elm-make --yes
   '';
 }

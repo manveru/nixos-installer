@@ -1,7 +1,6 @@
-module Timezones exposing (..)
+module TimezoneTab.Map exposing (zones)
 
 import Dict
-import Html
 import Svg exposing (g, path, svg, text)
 import Svg.Attributes
     exposing

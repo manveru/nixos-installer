@@ -6,19 +6,22 @@ stdenv.mkDerivation {
   name = "nixos-installer";
 
   buildInputs = [
-    guile
-    entr
-    utillinux
-    jq
-    guile-json
-    guile-websocket
-    guile-fibers
     elmPackages.elm
     elmPackages.elm-compiler
     elmPackages.elm-make
     elmPackages.elm-package
     elmPackages.elm-reactor
     elmPackages.elm-repl
+    entr
+    guile
+    guile-fibers
+    guile-json
+    guile-websocket
+    jq
+    nodejs
+    qemu
+    utillinux
+    yarn
   ];
 
   TZDIR = "${tzdata}/share/zoneinfo";

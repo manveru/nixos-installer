@@ -1,28 +1,16 @@
-module KeyboardLayouts exposing (..)
+module KeyboardTab.Layouts exposing (all, default)
 
+import App.Types exposing (..)
 import Dict
 
 
-type alias Key =
-    String
+default : ( Key, KeyboardLayout )
+default =
+    ( "us", { layout = "us", variant = "", name = "English (US)" } )
 
 
-type alias KeyboardLayout =
-    { layout : String, variant : String, name : String }
-
-
-
--- Extracted from
--- https://github.com/hsgg/lxpanel/blob/a04979c2878aff29adcd9b3fa2ba74a4ea436d47/src/plugins/xkb/xkeyboardconfig/layouts.cfg
-
-
-defaultKeyboardLayout : KeyboardLayout
-defaultKeyboardLayout =
-    { layout = "us", variant = "", name = "English (US)" }
-
-
-keyboardLayoutsAndVariants : Dict.Dict Key KeyboardLayout
-keyboardLayoutsAndVariants =
+all : Dict.Dict Key KeyboardLayout
+all =
     Dict.fromList
         (List.map
             (\entry ->
@@ -32,12 +20,17 @@ keyboardLayoutsAndVariants =
                 in
                 ( key, { layout = layout, variant = variant, name = name } )
             )
-            layoutData
+            data
         )
 
 
-layoutData : List ( String, ( String, String, String ) )
-layoutData =
+
+-- Extracted from
+-- https://github.com/hsgg/lxpanel/blob/a04979c2878aff29adcd9b3fa2ba74a4ea436d47/src/plugins/xkb/xkeyboardconfig/layouts.cfg
+
+
+data : List ( String, ( String, String, String ) )
+data =
     [ ( "ad", ( "ad", "", "Catalan" ) )
     , ( "af", ( "af", "", "Afghani" ) )
     , ( "af,fa-olpc", ( "af", "fa-olpc", "Persian (Afghanistan, Dari OLPC)" ) )

@@ -11,3 +11,4 @@ result
 elm-stuff/*
 ui/elm-stuff
 ui/index.js
+node_modules/*
