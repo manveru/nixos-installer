@@ -12,9 +12,10 @@ import Style exposing (fullWidth)
 import TimezoneTab.Map
 
 
+view : Model -> Html Msg
 view model =
     grid []
-        (List.map (\h -> h model.timezone)
+        (List.map (\h -> h model)
             [ title, subtitle, chooseRegion, chooseCity, viewMap ]
         )
 

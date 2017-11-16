@@ -1,29 +1,33 @@
-module App.State exposing (update)
+module App.State exposing (init, update)
 
 import App.Types exposing (..)
-import KeyboardTab.Layouts
 import Material
 import Material.Layout
+import Navigation exposing (Location)
 import T
 import Translator exposing (Translator)
 
 
-init : ( Model, Cmd Msg )
-init =
-    { mdl = Material.Layout.setTabsWidth 600 Material.model
-    , selectedTab = 0
-    , translator = initTranslator
-    , keyboard = KeyboardTab.Layouts.default
-    , user = nullUser
-    , users = []
-    , language = T.defaultTranslation
-    , timezone = nullTimezone
-    , timezones = []
-    , disk = nullDisk
-    , disks = []
-    }
+init : List Location -> ( Model, Cmd Msg )
+init history =
+    ( { history = history
+      , mdl = Material.Layout.setTabsWidth 600 Material.model
+      , selectedTab = 0
+      , translator = initTranslator
+      , keyboard = nullKeyboard
+      , user = nullUser
+      , users = []
+      , language = nullLanguage
+      , timezone = nullTimezone
+      , timezones = []
+      , disk = nullDisk
+      , disks = []
+      }
+    , Cmd.none
+    )
 
 
+initTranslator : Translator
 initTranslator =
     Translator.updateTranslations T.defaultTranslation
         (Translator.makeDefaultTranslator T.fallback)
@@ -31,80 +35,116 @@ initTranslator =
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    ( { model
-        | history = updateHistory msg model
-        , mdl = updateMdl msg model
-        , selectedTab = updateTab msg model
-        , translator = updateTranslator msg model
-        , keyboard = updateKeyboard msg model
-        , user = updateUser msg model
-        , users = updateUsers msg model
-        , language = updateLanguage msg model
-        , timezone = updateTimezone msg model
-        , timezones = updateTimezones msg model
-        , disk = updateDisk msg model
-        , disks = updateDisks msg model
-      }
-    , Cmd.none
+    ( model
+        |> updateHistory msg
+        -- |> updateMdl msg
+        |> updateTab msg
+        |> updateTranslator msg
+        |> updateKeyboard msg
+        |> updateUser msg
+        |> updateUsers msg
+        |> updateLanguage msg
+        |> updateTimezone msg
+        |> updateTimezones msg
+        |> updateDisk msg
+        |> updateDisks msg
+    , updateCmd msg model
     )
 
 
-updateHistory msg model =
+updateCmd : Msg -> Model -> Cmd Msg
+updateCmd msg model =
     case msg of
-        UrlChange location ->
-            location :: model.history
+        _ ->
+            Cmd.none
 
 
+updateHistory : Msg -> Model -> Model
+updateHistory msg model =
+    { model
+        | history =
+            case msg of
+                UrlChange location ->
+                    location :: model.history
+
+                _ ->
+                    model.history
+    }
+
+
+updateMdl : Msg -> Model -> ( Model, Cmd Msg )
 updateMdl msg model =
     case msg of
         Mdl msg ->
             Material.update Mdl msg model
 
         _ ->
-            model.mdl
+            ( model, Cmd.none )
 
 
+updateTab : Msg -> Model -> Model
 updateTab msg model =
-    case msg of
-        SelectTab index ->
-            index
+    { model
+        | selectedTab =
+            case msg of
+                SelectTab index ->
+                    index
+
+                _ ->
+                    model.selectedTab
+    }
 
 
+updateTranslator : Msg -> Model -> Model
 updateTranslator msg model =
-    case msg of
-        ChooseTranslator translator ->
-            Translator.updateTranslations
-                model.language.translation
-                model.translator
+    { model
+        | translator =
+            case msg of
+                ChooseTranslator translator ->
+                    Translator.updateTranslations
+                        model.language.translation
+                        model.translator
+
+                _ ->
+                    model.translator
+    }
 
 
+updateKeyboard : Msg -> Model -> Model
 updateKeyboard msg model =
-    nullKeyboard
+    model
 
 
+updateUser : Msg -> Model -> Model
 updateUser msg model =
-    nullUser
+    model
 
 
+updateUsers : Msg -> Model -> Model
 updateUsers msg model =
-    []
+    model
 
 
+updateLanguage : Msg -> Model -> Model
 updateLanguage msg model =
-    nullLanguage
+    model
 
 
+updateTimezone : Msg -> Model -> Model
 updateTimezone msg model =
-    nullTimezone
+    model
 
 
+updateTimezones : Msg -> Model -> Model
 updateTimezones msg model =
-    []
+    model
 
 
+updateDisk : Msg -> Model -> Model
 updateDisk msg model =
-    nullDisk
+    model
 
 
+updateDisks : Msg -> Model -> Model
 updateDisks msg model =
-    []
+    model

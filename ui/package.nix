@@ -19,10 +19,6 @@
     version = "2.1.2";
     sha256 = "1bs77ir72x7sqmgaxk71fic0g1yp3y78hjhygcafl40j5xzxvmr8";
   };
-  "ChristophP/elm-i18next" = {
-    version = "2.0.0";
-    sha256 = "0pnamwb3nkdr0sal25nbm1awnqcya11c93daqmrzcrwlrxqjc3ll";
-  };
   "ccapndave/elm-translator" = {
     version = "1.1.0";
     sha256 = "03f6g3hrvkyjx6qhb51k1aajv0py3jg6z559d9bld64gsihfzxis";
@@ -46,6 +42,10 @@
   "elm-lang/svg" = {
     version = "2.0.0";
     sha256 = "1c7p967n1yhynravqwgh80vprwz7r2r1n0x3icn5wzk9iaqs069l";
+  };
+  "NoRedInk/elm-decode-pipeline" = {
+    version = "3.0.0";
+    sha256 = "1q7d0xlmllwal9japns4kgn3zz7a1qvhx937dlangdsk7ykc62hx";
   };
   "debois/elm-dom" = {
     version = "1.2.3";

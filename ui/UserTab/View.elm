@@ -11,62 +11,44 @@ import T exposing (t, tt)
 import Translator
 
 
-view :
-    { a | user : Model, mdl : Store s, translator : Translator.Translator }
-    -> Html Msg
+view : Model -> Html Msg
 view model =
     grid []
         ([ title model
          , subtitle model
          ]
-            ++ List.map (\h -> h model.user model.mdl model)
+            ++ List.map (\h -> h model)
                 [ enterName, enterUsername, enterPassword ]
         )
 
 
-title :
-    { a | translator : Translator.Translator }
-    -> Material.Grid.Cell msg
+title : Model -> Material.Grid.Cell Msg
 title tr =
     cell [ fullWidth ]
         [ Options.styled p [ Typo.display1 ] [ t tr T.UserTab ] ]
 
 
-subtitle :
-    { a | translator : Translator.Translator }
-    -> Material.Grid.Cell msg
+subtitle : Model -> Material.Grid.Cell Msg
 subtitle tr =
     cell [ fullWidth ]
         [ Options.styled p [ Typo.display1 ] [ t tr T.UserTabCaption ] ]
 
 
-enterName :
-    Model
-    -> Store s
-    -> { a | translator : Translator.Translator }
-    -> Material.Grid.Cell Msg
-enterName model mdl tr =
-    formInput 10 model mdl tr .fullName "fullname" T.EnterName SetFullName
+enterName : Model -> Material.Grid.Cell Msg
+enterName model =
+    formInput 10 model .fullName "fullname" T.EnterName SetFullName
 
 
-enterUsername :
-    Model
-    -> Store s
-    -> { a | translator : Translator.Translator }
-    -> Material.Grid.Cell Msg
-enterUsername model mdl tr =
-    formInput 20 model mdl tr .name "username" T.EnterUsername SetName
+enterUsername : Model -> Material.Grid.Cell Msg
+enterUsername model =
+    formInput 20 model .name "username" T.EnterUsername SetName
 
 
-enterPassword :
-    Model
-    -> Store s
-    -> { a | translator : Translator.Translator }
-    -> Material.Grid.Cell Msg
-enterPassword model mdl _ =
+enterPassword : Model -> Material.Grid.Cell Msg
+enterPassword model =
     passInput 30
         model
-        mdl
+        model.mdl
         "pwd"
         .pass
         SetPass
@@ -159,17 +141,7 @@ passInput n model mdl key acc1 event1 acc2 event2 label caption =
         ]
 
 
-formInput :
-    Int
-    -> { c | user : b }
-    -> Store s
-    -> { a | translator : Translator.Translator }
-    -> (b -> String)
-    -> String
-    -> T.T
-    -> (String -> Msg)
-    -> Material.Grid.Cell Msg
-formInput n model mdl tr acc id label event =
+formInput n model acc id label event =
     let
         value =
             acc model.user
@@ -179,8 +151,8 @@ formInput n model mdl tr acc id label event =
             [ cell [ Material.Grid.size All 6 ]
                 [ Textfield.render Mdl
                     [ n ]
-                    mdl
-                    [ Textfield.label (tt tr label)
+                    model.mdl
+                    [ Textfield.label (tt model label)
                     , Textfield.floatingLabel
                     , Textfield.value value
                     , Options.onInput event

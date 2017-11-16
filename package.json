@@ -6,6 +6,7 @@
   "author": "Michael Fellinger <michael.fellinger@xing.com>",
   "license": "MIT",
   "dependencies": {
+    "elm-analyse": "^0.12.1",
     "elm-oracle": "ElmCast/elm-oracle",
     "elm-test": "rtfeldman/node-test-runner"
   }
