@@ -14,10 +14,15 @@ decodeDisks =
 decodeDisk : Decoder Disk
 decodeDisk =
     decode Disk
-        |> required "path" string
-        |> required "model" string
-        |> required "serial" string
-        |> required "size" string
+        |> required "name" string
+        |> required "kname" string
+        |> required "maj:min" string
+        |> required "fstype" string
+        |> required "mountpoint" string
+        |> required "label" string
+        |> required "uuid" string
+        |> required "parttype" string
+        |> required "partlabel" string
 
 
 getDisks : Cmd Msg

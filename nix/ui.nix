@@ -2,12 +2,12 @@
 let
   makeElmStuff = callPackage ./elm2nix.nix {
     inherit elm-make;
-    elmPackageJson = ./elm-package.json;
+    elmPackageJson = ../ui/elm-package.json;
   };
-  elmStuff = makeElmStuff (import ./package.nix);
+  elmStuff = makeElmStuff (import ./ui-package.nix);
   ignore = map (path: toString path ) [
-    ./elm-stuff
-    ./Makefile
+    ../ui/elm-stuff
+    ../ui/Makefile
   ];
 in
 stdenv.mkDerivation {
@@ -15,7 +15,7 @@ stdenv.mkDerivation {
 
   src = builtins.filterSource (path: type:
     (lib.all (i: i != path) ignore)
-  ) ./.;
+  ) ../ui;
 
   installPhase = ''
     mkdir -p $out/elm-stuff

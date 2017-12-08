@@ -2,13 +2,17 @@ module Main exposing (main)
 
 import App.State
 import App.Types exposing (..)
-import Html exposing (Html, img, pre, text)
+import Html exposing (Html, div, img, pre, text)
 import Html.Attributes exposing (height, src)
 import KeyboardTab.View
 import LanguageTab.View
+import Material.Grid exposing (Device(..), cell, grid, size)
 import Material.Layout as Layout
 import Navigation
+import NixosConfiguration
 import PartitionTab.View
+import SHA512Crypt
+import String
 import T exposing (t)
 import TimezoneTab.View
 import UserTab.View
@@ -89,24 +93,35 @@ tabs model =
 
 render : Model -> Html Msg
 render model =
-    case model.selectedTab of
-        0 ->
-            LanguageTab.View.view model
+    body model
+        (case model.selectedTab of
+            0 ->
+                LanguageTab.View.view model
 
-        1 ->
-            TimezoneTab.View.view model
+            1 ->
+                TimezoneTab.View.view model
 
-        2 ->
-            KeyboardTab.View.view model
+            2 ->
+                KeyboardTab.View.view model
 
-        3 ->
-            PartitionTab.View.view model
+            3 ->
+                PartitionTab.View.view model
 
-        4 ->
-            UserTab.View.view model
+            4 ->
+                UserTab.View.view model
 
-        _ ->
-            LanguageTab.View.view model
+            _ ->
+                LanguageTab.View.view model
+        )
+
+
+body : Model -> Html Msg -> Html Msg
+body model content =
+    grid []
+        [ cell [ Material.Grid.size All 8 ] [ content ]
+        , cell [ Material.Grid.size All 4 ] [ pre [] [ text (NixosConfiguration.config model) ] ]
+        , cell [ Material.Grid.size All 4 ] [ div [] [ text (String.slice 0 1000 model.error) ] ]
+        ]
 
 
 

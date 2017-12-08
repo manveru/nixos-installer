@@ -17,12 +17,13 @@ type alias Model =
     , keyboard : Keyboard
     , user : User
     , users : List User
-    , language : Language
     , timezone : Timezone
     , timezones : List Timezone
     , disk : Disk
     , disks : List Disk
     , language : Language
+    , config : Dict.Dict String ConfigOption
+    , error : String
     }
 
 
@@ -32,7 +33,7 @@ type Msg
     | Mdl (Material.Msg Msg)
       -- Language
     | ChooseLanguage String
-    | ChooseTranslator Translator
+    | UpdateTranslator Translations
       -- Keyboard
     | ChooseKeyboard String
       -- User
@@ -51,15 +52,49 @@ type Msg
       -- Partition
     | InitPartitions (Result Http.Error (List Disk))
     | ChoosePartition String
+      -- Option
+    | InitNixosOptions (Result Http.Error (Dict.Dict String ConfigOption))
+
+
+type ConfigOption
+    = IntConfig { default : Int, example : Maybe Int }
+    | NullOrIntConfig { default : Maybe Int, example : Maybe Int }
+    | StringConfig { default : Maybe String, example : Maybe String }
+    | ListOfStringsConfig { default : List String, example : Maybe (List String) }
+    | ListOfDictConfig { default : List (Dict.Dict String String), example : Maybe (List (Dict.Dict String String)) }
+    | DictConfig { default : Dict.Dict String String, example : Maybe (Dict.Dict String String) }
+    | UnspecifiedConfig {}
+    | BooleanConfig { default : Bool, example : Maybe Bool }
+
+
+type alias LsblkDevice =
+    { name : String
+    , kname : String
+    , majorMinor : String
+    , fsType : String
+    , mountPoint : String
+    , label : String
+    , uuid : String
+    , partType : String
+    , partLabel : String
+    }
 
 
 type alias Disk =
-    { path : String, model : String, serial : String, size : String }
+    { path : String
+    , model : String
+    , serial : String
+    , size : String
+    }
 
 
 nullDisk : Disk
 nullDisk =
-    { path = "", model = "", serial = "", size = "" }
+    { path = ""
+    , model = ""
+    , serial = ""
+    , size = ""
+    }
 
 
 type alias Timezone =

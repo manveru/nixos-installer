@@ -8,6 +8,7 @@
   "dependencies": {
     "elm-analyse": "^0.12.1",
     "elm-oracle": "ElmCast/elm-oracle",
-    "elm-test": "rtfeldman/node-test-runner"
+    "elm-test": "rtfeldman/node-test-runner",
+    "tern": "^0.21.0"
   }
 }

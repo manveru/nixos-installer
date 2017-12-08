@@ -20,11 +20,13 @@ view model =
         )
 
 
+title : Model -> Material.Grid.Cell msg
 title _ =
     cell [ fullWidth ]
         [ Options.styled p [ Typo.display1 ] [ text "Configure Location" ] ]
 
 
+subtitle : Model -> Material.Grid.Cell msg
 subtitle _ =
     cell [ fullWidth ]
         [ Options.styled p [ Typo.subhead ] [ text """
@@ -35,6 +37,7 @@ subtitle _ =
         ]
 
 
+chooseRegion : Model -> Material.Grid.Cell Msg
 chooseRegion model =
     cell [ Material.Grid.size All 2 ]
         [ select [ onInput ChooseRegion, id "tz-region", name "tz-region" ]
@@ -44,6 +47,7 @@ chooseRegion model =
         ]
 
 
+chooseCity : Model -> Material.Grid.Cell Msg
 chooseCity model =
     if model.timezone.region == "" then
         cell [] []
@@ -63,6 +67,7 @@ chooseCity model =
             ]
 
 
+viewMap : Model -> Material.Grid.Cell Msg
 viewMap model =
     cell [ fullWidth ] [ TimezoneTab.Map.zones model.timezone ]
 

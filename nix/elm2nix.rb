@@ -14,7 +14,7 @@ deps = Hash[ depsSrc.map { |pkg, ver|
   ]
 } ]
 
-File.open("package.nix", 'w') do |file|
+File.open("../nix/ui-package.nix", 'w') do |file|
   file.puts "{"
     for pkg, info in deps
       file.puts "  \"#{pkg}\" = {"

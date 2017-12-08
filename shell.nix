@@ -1,30 +1,32 @@
 with import (fetchTarball {
-  url = https://github.com/NixOS/nixpkgs/archive/4db6d3589175042c0a4c17691fa5cf855053d7fa.tar.gz;
-  sha256 = "0q07hcml3lwk4wgs1jr6i14z05bx32rw12p400nh99zkyjqdws07";
+  url = https://github.com/NixOS/nixpkgs/archive/a9b3355d669ab15c947e71429855574cf538d975.tar.gz;
+  sha256 = "05wmq7i4ln76j0mm52w2k3wa5cysvgkcacpcd2bvj3afdk38k4sq";
 }) {overlays = [ (import ./overlay.nix) ]; };
+with builtins;
 stdenv.mkDerivation {
   name = "nixos-installer";
 
-  buildInputs = [
-    elmPackages.elm
-    elmPackages.elm-compiler
-    elmPackages.elm-make
-    elmPackages.elm-package
-    elmPackages.elm-reactor
-    elmPackages.elm-repl
+  buildInputs = with elmPackages; [
+    elm
+    elm-compiler
+    elm-make
+    elm-package
+    elm-reactor
+    elm-repl
+    elm-interface-to-json
     entr
-    guile
-    guile-fibers
-    guile-json
-    guile-websocket
     jq
     nodejs
     qemu
     utillinux
     yarn
+    go
   ];
 
+  shellHook = ''
+    export PATH="$PATH:${toString ./node_modules/.bin }"
+  '';
+
   TZDIR = "${tzdata}/share/zoneinfo";
-  GUILE_LOAD_PATH="${guile-json}";
   NIXOS_MANUAL = nixos-manual;
 }

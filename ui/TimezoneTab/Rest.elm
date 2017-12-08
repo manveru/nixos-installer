@@ -22,4 +22,4 @@ decodeTimezones =
 getTimezones : Cmd Msg
 getTimezones =
     Http.send InitTimezones
-        (Http.get "http://localhost:8081/timezones" decodeTimezones)
+        (Http.get "/timezones" decodeTimezones)

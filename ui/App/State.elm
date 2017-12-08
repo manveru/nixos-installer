@@ -1,10 +1,13 @@
 module App.State exposing (init, update)
 
 import App.Types exposing (..)
+import Dict
 import Material
 import Material.Layout
 import Navigation exposing (Location)
+import NixosOptions
 import T
+import TimezoneTab.Rest
 import Translator exposing (Translator)
 
 
@@ -22,9 +25,19 @@ init history =
       , timezones = []
       , disk = nullDisk
       , disks = []
+      , config = nullConfig
+      , error = ""
       }
-    , Cmd.none
+    , Cmd.batch
+        [ TimezoneTab.Rest.getTimezones
+        , NixosOptions.getNixosOptions
+        ]
     )
+
+
+nullConfig : Dict.Dict String ConfigOption
+nullConfig =
+    Dict.empty
 
 
 initTranslator : Translator
@@ -39,15 +52,16 @@ update msg model =
         |> updateHistory msg
         -- |> updateMdl msg
         |> updateTab msg
-        |> updateTranslator msg
         |> updateKeyboard msg
         |> updateUser msg
         |> updateUsers msg
         |> updateLanguage msg
-        |> updateTimezone msg
+        |> updateTranslator msg
         |> updateTimezones msg
+        |> updateTimezone msg
         |> updateDisk msg
         |> updateDisks msg
+        |> updateOptions msg
     , updateCmd msg model
     )
 
@@ -100,7 +114,7 @@ updateTranslator msg model =
     { model
         | translator =
             case msg of
-                ChooseTranslator translator ->
+                ChooseLanguage _ ->
                     Translator.updateTranslations
                         model.language.translation
                         model.translator
@@ -127,17 +141,84 @@ updateUsers msg model =
 
 updateLanguage : Msg -> Model -> Model
 updateLanguage msg model =
-    model
+    { model
+        | language =
+            case msg of
+                ChooseLanguage name ->
+                    findLanguage name
+
+                _ ->
+                    model.language
+    }
+
+
+findLanguage : String -> Language
+findLanguage name =
+    Maybe.withDefault T.defaultLanguage
+        (List.head (List.filter (\lang -> lang.name == name) T.languages))
 
 
 updateTimezone : Msg -> Model -> Model
 updateTimezone msg model =
-    model
+    { model
+        | timezone =
+            case msg of
+                ChooseLanguage name ->
+                    findTimezone model.timezones model.language.timezone
+
+                ChooseTimezone timezoneName ->
+                    findTimezone model.timezones timezoneName
+
+                ChooseRegion region ->
+                    findRegionTimezone model.timezones region
+
+                ChooseCity city ->
+                    findTimezoneByRegionAndCity model.timezones model.timezone.region city
+
+                _ ->
+                    model.timezone
+    }
+
+
+findRegionTimezone : List Timezone -> String -> Timezone
+findRegionTimezone timezones regionName =
+    Maybe.withDefault nullTimezone
+        (List.head (List.filter (\timezone -> timezone.region == regionName) timezones))
+
+
+findTimezoneByRegionAndCity : List Timezone -> String -> String -> Timezone
+findTimezoneByRegionAndCity timezones region city =
+    Maybe.withDefault nullTimezone
+        (List.head
+            (List.filter
+                (\timezone ->
+                    (timezone.region == region) && (timezone.city == city)
+                )
+                timezones
+            )
+        )
+
+
+findTimezone : List Timezone -> String -> Timezone
+findTimezone timezones timezoneName =
+    Maybe.withDefault nullTimezone
+        (List.head (List.filter (\timezone -> timezone.name == timezoneName) timezones))
 
 
 updateTimezones : Msg -> Model -> Model
 updateTimezones msg model =
-    model
+    { model
+        | timezones =
+            case msg of
+                InitTimezones (Ok zones) ->
+                    List.sortBy .name zones
+
+                InitTimezones (Err e) ->
+                    model.timezones
+
+                _ ->
+                    model.timezones
+    }
 
 
 updateDisk : Msg -> Model -> Model
@@ -148,3 +229,16 @@ updateDisk msg model =
 updateDisks : Msg -> Model -> Model
 updateDisks msg model =
     model
+
+
+updateOptions : Msg -> Model -> Model
+updateOptions msg model =
+    case msg of
+        InitNixosOptions (Ok options) ->
+            { model | config = options }
+
+        InitNixosOptions (Err e) ->
+            { model | error = toString e }
+
+        _ ->
+            model

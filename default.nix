@@ -1,21 +1,16 @@
-{stdenv, lib, guile, jq, tzdata, makeWrapper, utillinux
-, guile-json
-, guile-fibers
-, guile-websocket
+{stdenv, lib, jq, tzdata, makeWrapper, utillinux
 , callPackage
 , elmPackages}:
 let
-  nixos-installer-frontend = callPackage ./ui {
+  nixos-installer-frontend = callPackage ./nix/ui.nix {
     elm-make = elmPackages.elm-make;
   };
-  makeGuilePaths = drvs: with builtins;
-    lib.concatStringsSep " " (map (drv: "${drv}/share/guile/site") drvs);
 in
 stdenv.mkDerivation {
   name = "nixos-installer";
 
   buildInputs = [
-    guile jq tzdata makeWrapper utillinux guile-json guile-fibers
+    jq tzdata makeWrapper utillinux
   ];
 
   src = lib.cleanSource ./.;

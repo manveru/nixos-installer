@@ -141,6 +141,19 @@ passInput n model mdl key acc1 event1 acc2 event2 label caption =
         ]
 
 
+formInput :
+    Int
+    ->
+        { b
+            | mdl : Store s
+            , translator : Translator.Translator
+            , user : a
+        }
+    -> (a -> String)
+    -> String
+    -> T.T
+    -> (String -> Msg)
+    -> Material.Grid.Cell Msg
 formInput n model acc id label event =
     let
         value =
