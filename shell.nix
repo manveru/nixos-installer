@@ -3,30 +3,22 @@ with import (fetchTarball {
   sha256 = "05wmq7i4ln76j0mm52w2k3wa5cysvgkcacpcd2bvj3afdk38k4sq";
 }) {overlays = [ (import ./overlay.nix) ]; };
 with builtins;
+let
+  python = import ./requirements.nix { inherit pkgs; };
+in
 stdenv.mkDerivation {
   name = "nixos-installer";
 
   buildInputs = with elmPackages; [
-    elm
-    elm-compiler
-    elm-make
-    elm-package
-    elm-reactor
-    elm-repl
-    elm-interface-to-json
     entr
-    jq
-    nodejs
     qemu
     utillinux
-    yarn
-    go
+    python36Packages.pytestrunner
+    python36Packages.flake8
+    pypi2nix
   ];
 
-  shellHook = ''
-    export PATH="$PATH:${toString ./node_modules/.bin }"
-  '';
+  NO_TESTS_OVER_WIRE = "1";
 
-  TZDIR = "${tzdata}/share/zoneinfo";
   NIXOS_MANUAL = nixos-manual;
 }
